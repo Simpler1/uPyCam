@@ -17,9 +17,13 @@ import machine
 
 import ntptime
 import time
+import localTime
 import camera
 from ftp import ftpserver
 from config import *
+
+# Eastern Standard Time is 5 hours earlier than GMT
+localTime.setLocalTime(-5)
 
 if  app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
@@ -67,13 +71,14 @@ while loop:
     try:
         # prepare for photo
         led.value(1)
-        led.value(0)
 
         # take photo
         buf = camera.capture()
+        led.value(0)
+
         # save photo
         timestamp = rtc.datetime()
-        time_str = '%4d%02d%02d%02d%02d%02d' %(timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
+        time_str = '%4d%02d%02d_%02d%02d%02d' %(timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
 
         if app_config['mode'] == 'microSD':
             f = open('sd/'+time_str+'.jpg', 'w')
