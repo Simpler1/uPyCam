@@ -16,9 +16,9 @@ app_config = {
     'sleep-ms': 2000,
     'max-error': 10,
     'ftp': False,
-    'mode': 'MQTT', # mode -> 'MQTT' or 'microSD'
+    'mode': 'MQTT',  # mode -> 'MQTT' or 'microSD'
     'camera': 'M5CAMERA',  # camera -> 'ESP32-CAM' or 'M5CAMERA'
-    'led': 14, # led -> 4: ESP32-CAM or 14: M5CAMERA
+    'led': 14,  # led -> 4: ESP32-CAM or 14: M5CAMERA
 }
 
 mqtt_config = {
@@ -28,14 +28,14 @@ mqtt_config = {
 }
 
 microsd_config = {
-    'miso':2,
-    'mosi':15,
-    'ss':13,
-    'sck':14,
+    'miso': 2,
+    'mosi': 15,
+    'ss': 13,
+    'sck': 14,
 }
 
 
 wifi_config = {
-    'ssid':'',
-    'password':''
+    'ssid': '',
+    'password': ''
 }

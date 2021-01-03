@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import uos
-import machine 
+import machine
 
 import ntptime
 import time
@@ -25,7 +25,7 @@ from config import *
 # Eastern Standard Time is 5 hours earlier than GMT
 localTime.setLocalTime(-5)
 
-if  app_config['mode'] == 'MQTT':
+if app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
 
 try:
@@ -36,18 +36,18 @@ try:
         camera.init(0, format=camera.JPEG)  # ESP32-CAM
     elif app_config['camera'] == 'M5CAMERA':
         camera.init(0, d0=32, d1=35, d2=34, d3=5, d4=39, d5=18, d6=36, d7=19,
-                    href=26, vsync=25, reset=15, sioc=23, siod=22, xclk=27, pclk=21)   #M5CAMERA
-    
+                    href=26, vsync=25, reset=15, sioc=23, siod=22, xclk=27, pclk=21)  # M5CAMERA
+
     if app_config['mode'] == 'microSD':
         # sd mount
-        sd = machine.SDCard(slot=3, width=1, 
+        sd = machine.SDCard(slot=3, width=1,
                             sck=machine.Pin(microsd_config['sck']),
                             mosi=machine.Pin(microsd_config['mosi']),
                             miso=machine.Pin(microsd_config['miso']),
                             cs=machine.Pin(microsd_config['ss']))
         uos.mount(sd, '/sd')
-        #uos.listdir('/')
-    elif  app_config['mode'] == 'MQTT':
+        # uos.listdir('/')
+    elif app_config['mode'] == 'MQTT':
         c = MQTTClient(mqtt_config['client_id'], mqtt_config['server'])
         c.connect()
 
@@ -78,19 +78,20 @@ while loop:
 
         # save photo
         timestamp = rtc.datetime()
-        time_str = '%4d%02d%02d_%02d%02d%02d' %(timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
+        time_str = '%4d%02d%02d_%02d%02d%02d' % (
+            timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
 
         if app_config['mode'] == 'microSD':
             f = open('sd/'+time_str+'.jpg', 'w')
             f.write(buf)
             time.sleep_ms(100)
             f.close()
-        elif  app_config['mode'] == 'MQTT':
+        elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
 
         # sleep
         time.sleep_ms(app_config['sleep-ms'])
-    
+
     except KeyboardInterrupt:
         print("debugging stopped")
         loop = False

@@ -34,33 +34,38 @@ except:
 DEBUG = False
 #DEBUG = True
 
+
 def dbg(msg, msg_=""):
     global DEBUG
     if DEBUG:
-        print (str(msg) + str(msg_))
+        print(str(msg) + str(msg_))
 
 
 class ftpserver():
     def send_list_data(self, path, dataclient, full):
         try:
             # whether path is a directory name
-            for fname in sorted(uos.listdir(path), key = str.lower):
+            for fname in sorted(uos.listdir(path), key=str.lower):
                 dataclient.sendall(self.make_description(path, fname, full))
         except:
             # path may be a file name or pattern
             pattern = path.split("/")[-1]
             path = path[:-(len(pattern) + 1)]
-            if path == "": path = "/"
-            for fname in sorted(uos.listdir(path), key = str.lower):
+            if path == "":
+                path = "/"
+            for fname in sorted(uos.listdir(path), key=str.lower):
                 if fncmp(fname, pattern):
-                    dataclient.sendall(self.make_description(path, fname, full))
+                    dataclient.sendall(
+                        self.make_description(path, fname, full))
 
     def make_description(self, path, fname, full):
         if full:
-            stat = uos.stat(self.get_absolute_path(path,fname))
-            file_permissions = "drwxr-xr-x" if (stat[0] & 0o170000 == 0o040000) else "-rw-r--r--"
+            stat = uos.stat(self.get_absolute_path(path, fname))
+            file_permissions = "drwxr-xr-x" if (
+                stat[0] & 0o170000 == 0o040000) else "-rw-r--r--"
             file_size = stat[6]
-            description = "{}    1 owner group {:>10} Jan 1 2000 {}\r\n".format(file_permissions, file_size, fname)
+            description = "{}    1 owner group {:>10} Jan 1 2000 {}\r\n".format(
+                file_permissions, file_size, fname)
         else:
             description = fname + "\r\n"
         return description
@@ -108,7 +113,7 @@ class ftpserver():
                 si += 1
                 pi += 1
             else:
-                if pattern[pi] == '*': # recurse
+                if pattern[pi] == '*':  # recurse
                     if (pi + 1) == len(pattern):
                         return True
                     while si < len(fname):
@@ -178,7 +183,8 @@ class ftpserver():
                     cwd = '/'
                     try:
                         dbg("FTP connection from:", remote_addr)
-                        cl.sendall("220 Hello, this is the " + uos.uname()[4] + ".\r\n")
+                        cl.sendall("220 Hello, this is the " +
+                                   uos.uname()[4] + ".\r\n")
                         while True:
                             data = cl.readline().decode("utf-8").rstrip("\r\n")
                             if len(data) <= 0:
@@ -228,7 +234,7 @@ class ftpserver():
                                 break
                             elif command == "PASV":
                                 cl.sendall('227 Entering Passive Mode ({},{},{}).\r\n'.format(
-                                    addr.replace('.',','), DATA_PORT>>8, DATA_PORT%256))
+                                    addr.replace('.', ','), DATA_PORT >> 8, DATA_PORT % 256))
                                 dataclient, data_addr = self.datasocket.accept()
                                 dbg("FTP Data connection from:", data_addr)
                             elif command == "LIST" or command == "NLST":
@@ -237,8 +243,10 @@ class ftpserver():
                                 else:
                                     place = cwd
                                 try:
-                                    self.send_list_data(place, dataclient, command == "LIST" or payload == "-l")
-                                    cl.sendall("150 Here comes the directory listing.\r\n")
+                                    self.send_list_data(
+                                        place, dataclient, command == "LIST" or payload == "-l")
+                                    cl.sendall(
+                                        "150 Here comes the directory listing.\r\n")
                                     cl.sendall("226 Listed.\r\n")
                                 except:
                                     cl.sendall(msg_550_fail)
@@ -248,7 +256,8 @@ class ftpserver():
                             elif command == "RETR":
                                 try:
                                     self.send_file_data(path, dataclient)
-                                    cl.sendall("150 Opening data connection.\r\n")
+                                    cl.sendall(
+                                        "150 Opening data connection.\r\n")
                                     cl.sendall("226 Transfer complete.\r\n")
                                 except:
                                     cl.sendall(msg_550_fail)
@@ -284,22 +293,23 @@ class ftpserver():
                                 except:
                                     cl.sendall(msg_550_fail)
                             elif command == "RNFR":
-                                    fromname = path
-                                    cl.sendall("350 Rename from\r\n")
+                                fromname = path
+                                cl.sendall("350 Rename from\r\n")
                             elif command == "RNTO":
-                                    if fromname is not None:
-                                        try:
-                                            uos.rename(fromname, path)
-                                            cl.sendall(msg_250_OK)
-                                        except:
-                                            cl.sendall(msg_550_fail)
-                                    else:
+                                if fromname is not None:
+                                    try:
+                                        uos.rename(fromname, path)
+                                        cl.sendall(msg_250_OK)
+                                    except:
                                         cl.sendall(msg_550_fail)
-                                    fromname = None
+                                else:
+                                    cl.sendall(msg_550_fail)
+                                fromname = None
                             elif command == "MDTM":
                                 try:
-                                    tm=localtime(uos.stat(path)[8])
-                                    cl.sendall('213 {:04d}{:02d}{:02d}{:02d}{:02d}{:02d}\r\n'.format(*tm[0:6]))
+                                    tm = localtime(uos.stat(path)[8])
+                                    cl.sendall(
+                                        '213 {:04d}{:02d}{:02d}{:02d}{:02d}{:02d}\r\n'.format(*tm[0:6]))
                                 except:
                                     cl.sendall('550 Fail\r\n')
                             elif command == "STAT":
@@ -307,14 +317,15 @@ class ftpserver():
                                     cl.sendall("211-Connected to ({})\r\n"
                                                "    Data address ({})\r\n"
                                                "211 TYPE: Binary STRU: File MODE: Stream\r\n".format(
-                                               remote_addr[0], addr))
+                                                   remote_addr[0], addr))
                                 else:
                                     cl.sendall("213-Directory listing:\r\n")
                                     self.send_list_data(path, cl, True)
                                     cl.sendall("213 Done.\r\n")
                             else:
                                 cl.sendall("502 Unsupported command.\r\n")
-                                dbg("Unsupported command {} with payload {}".format(command, payload))
+                                dbg("Unsupported command {} with payload {}".format(
+                                    command, payload))
                     except Exception as err:
                         dbg(err)
                     finally:
