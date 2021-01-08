@@ -17,13 +17,11 @@ import machine
 
 import ntptime
 import time
-import localTime
+import netLocalTime
 import camera
 from ftp import ftpserver
 from config import *
-
-# Eastern Standard Time is 5 hours earlier than GMT
-localTime.setLocalTime(-5)
+import files
 
 if app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
@@ -52,7 +50,7 @@ try:
         c.connect()
 
     # ntp sync for date
-    ntptime.settime()
+    # ntptime.settime()
     rtc = machine.RTC()
 
     if app_config['ftp']:
@@ -70,7 +68,8 @@ loop = True
 while loop:
     try:
         # prepare for photo
-        led.value(1)
+        if app_config['flash']:
+          led.value(1)
 
         # take photo
         buf = camera.capture()
@@ -89,8 +88,13 @@ while loop:
         elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
 
+        print("Picture at:", netLocalTime.getTime())
+        print(files.jpgCount())
         # sleep
         time.sleep_ms(app_config['sleep-ms'])
+        # machine.lightsleep(app_config['sleep-ms'])
+        # machine.deepsleep(app_config['sleep-ms'] -
+        #                   app_config['deepSleepBootTime-ms'])
 
     except KeyboardInterrupt:
         print("debugging stopped")

@@ -13,12 +13,14 @@
 # limitations under the License.
 
 app_config = {
-    'sleep-ms': 2000,
+    'sleep-ms': 59000,
+    'deepSleepBootTime-ms': 7800,
+    'flash': False,
     'max-error': 10,
     'ftp': False,
-    'mode': 'MQTT',  # mode -> 'MQTT' or 'microSD'
-    'camera': 'M5CAMERA',  # camera -> 'ESP32-CAM' or 'M5CAMERA'
-    'led': 14,  # led -> 4: ESP32-CAM or 14: M5CAMERA
+    'mode': 'microSD',  # mode -> 'MQTT' or 'microSD'
+    'camera': 'ESP32-CAM',  # camera -> 'ESP32-CAM' or 'M5CAMERA'
+    'led': 4,  # led -> 4: ESP32-CAM or 14: M5CAMERA
 }
 
 mqtt_config = {

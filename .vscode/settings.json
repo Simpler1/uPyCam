@@ -16,5 +16,6 @@
     "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
     "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
   ],
-  "python.linting.pylintEnabled": true
+  "python.linting.pylintEnabled": true,
+  "python.pythonPath": "/home/kevin/.virtualenvs/scrapy.py3/bin/python"
 }
