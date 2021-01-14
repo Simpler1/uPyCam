@@ -2,32 +2,24 @@
 
 import bluetooth
 from ble_advertising import advertising_payload
-
 from micropython import const
+from my_time import nowStringExtended
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
 _IRQ_GATTS_WRITE = const(3)
+_IRQ_MTU_EXCHANGED = const(21)
 
 _FLAG_WRITE = const(0x0008)
 _FLAG_NOTIFY = const(0x0010)
 
-_UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-_UART_TX = (
-    bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"),
-    _FLAG_NOTIFY,
-)
-_UART_RX = (
-    bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"),
-    _FLAG_WRITE,
-)
-_UART_SERVICE = (
-    _UART_UUID,
-    (_UART_TX, _UART_RX),
-)
-
-# org.bluetooth.characteristic.gap.appearance.xml
+# https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
 _ADV_APPEARANCE_GENERIC_COMPUTER = const(128)
+
+_UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
+_UART_TX = (bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"), _FLAG_NOTIFY,)
+_UART_RX = (bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"), _FLAG_WRITE,)
+_UART_SERVICE = (_UART_UUID, (_UART_TX, _UART_RX),)
 
 
 class BLEUART:
@@ -35,36 +27,48 @@ class BLEUART:
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
-        ((self._tx_handle, self._rx_handle),) = self._ble.gatts_register_services((_UART_SERVICE,))
+        ((self._tx_handle, self._rx_handle),
+         ) = self._ble.gatts_register_services((_UART_SERVICE,))
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, rxbuf, True)
         self._connections = set()
         self._rx_buffer = bytearray()
         self._handler = None
         # Optionally add services=[_UART_UUID], but this is likely to make the payload too large.
-        self._payload = advertising_payload(name=name, appearance=_ADV_APPEARANCE_GENERIC_COMPUTER)
+        self._payload = advertising_payload(
+            name=name, appearance=_ADV_APPEARANCE_GENERIC_COMPUTER)
         self._advertise()
 
     def irq(self, handler):
         self._handler = handler
 
     def _irq(self, event, data):
+        print("\nevent:", event)
         # Track connections so we can send notifications.
         if event == _IRQ_CENTRAL_CONNECT:
+            print("_IRQ_CENTRAL_CONNECT")
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
         elif event == _IRQ_CENTRAL_DISCONNECT:
+            print("_IRQ_CENTRAL_DISCONNECT")
             conn_handle, _, _ = data
             if conn_handle in self._connections:
                 self._connections.remove(conn_handle)
             # Start advertising again to allow a new connection.
             self._advertise()
         elif event == _IRQ_GATTS_WRITE:
+            print("_IRQ_GATTS_WRITE")
             conn_handle, value_handle = data
             if conn_handle in self._connections and value_handle == self._rx_handle:
                 self._rx_buffer += self._ble.gatts_read(self._rx_handle)
                 if self._handler:
                     self._handler()
+        elif event == _IRQ_MTU_EXCHANGED:
+            # ATT MTU exchange complete (either initiated by us or the remote device).
+            conn_handle, mtu = data    # print received data
+            print("_IRQ_MTU_EXCHANGED")
+            print("conn_handle:", conn_handle)
+            print("mtu:", mtu)
 
     def any(self):
         return len(self._rx_buffer)
@@ -89,24 +93,32 @@ class BLEUART:
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
 
+def launch():
+    ble = bluetooth.BLE()
+    uart = BLEUART(ble)
+
+    def on_rx():
+        print("rx: ", uart.read().decode('UTF-8').strip())
+
+    uart.irq(handler=on_rx)
+    return uart
+
+
 def demo():
-    import time
+    from utime import sleep
 
     ble = bluetooth.BLE()
     uart = BLEUART(ble)
 
     def on_rx():
-        print("rx: ", uart.read().decode().strip())
+        print("rx: ", uart.read().decode('UTF-8').strip())
 
     uart.irq(handler=on_rx)
-    nums = [4, 8, 15, 16, 23, 42]
-    i = 0
 
     try:
         while True:
-            uart.write(str(nums[i]) + "\n")
-            i = (i + 1) % len(nums)
-            time.sleep_ms(1000)
+            uart.write(nowStringExtended() + "\n")
+            sleep(1)
     except KeyboardInterrupt:
         pass
 

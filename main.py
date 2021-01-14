@@ -14,14 +14,12 @@
 
 import uos
 import machine
-
-import ntptime
-import time
-import netLocalTime
+import utime
 import camera
 from ftp import ftpserver
 from config import *
-import files
+import my_files
+from my_time import nowStringExtended
 
 if app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
@@ -49,8 +47,6 @@ try:
         c = MQTTClient(mqtt_config['client_id'], mqtt_config['server'])
         c.connect()
 
-    # ntp sync for date
-    # ntptime.settime()
     rtc = machine.RTC()
 
     if app_config['ftp']:
@@ -60,38 +56,36 @@ try:
 
 except Exception as e:
     print("Error ocurred: " + str(e))
-    time.sleep_ms(5000)
+    utime.sleep_ms(5000)
     machine.reset()
 
+uart = ble_uart_peripheral.launch()
 error_counter = 0
 loop = True
 while loop:
     try:
         # prepare for photo
         if app_config['flash']:
-          led.value(1)
+            led.value(1)
 
         # take photo
         buf = camera.capture()
         led.value(0)
 
         # save photo
-        timestamp = rtc.datetime()
-        time_str = '%4d%02d%02d_%02d%02d%02d' % (
-            timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
-
         if app_config['mode'] == 'microSD':
-            f = open('sd/'+time_str+'.jpg', 'w')
+            count = my_files.jpgCount('sd/')
+            filename = 'sd/{:05d}.jpg'.format(count + 1)
+            f = open(filename, 'w')
             f.write(buf)
-            time.sleep_ms(100)
+            utime.sleep_ms(200)
             f.close()
         elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
 
-        print("Picture at:", netLocalTime.getTime())
-        print(files.jpgCount())
+        print("Picture", filename, "taken at:", nowStringExtended())
         # sleep
-        time.sleep_ms(app_config['sleep-ms'])
+        utime.sleep_ms(app_config['sleep-ms'])
         # machine.lightsleep(app_config['sleep-ms'])
         # machine.deepsleep(app_config['sleep-ms'] -
         #                   app_config['deepSleepBootTime-ms'])

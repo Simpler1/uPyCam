@@ -36,7 +36,6 @@ microsd_config = {
     'sck': 14,
 }
 
-
 wifi_config = {
     'ssid': '',
     'password': ''

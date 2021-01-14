@@ -1,21 +1,45 @@
+# my_time.py
+"""Custom time methods"""
+
 # Conclusion:
-# Try ntp.settime() at boot time.  
-# If successful, time is local and daylight saving time is accounted for.
-# 
+# Try ntp.settime() at boot time.
+# If successful, time is GMT.
+#
 # When setting through BLE, use machine.RTC().datetime([Y,M,D,h,m,s,0,0])
 #
 # time and utime classes will not set the time.
 
 
+def nowStringExtended():
+    """Returns the current GMT system date in extended ISO8601 format: YY-MM-DDThh:mm:ssZ """
+    import machine
+    rtc = machine.RTC()
+    year, month, day, dayofweek, hour, minute, second, us = rtc.datetime()
+    timeISO8601 = "{:4}-{:02}-{:02}T{:02}:{:02}:{:02}Z".format(
+        year, month, day, hour, minute, second)
+    return timeISO8601
 
-def set_time_secs(secs):  # Seconds since 01-Jan-2000 12:00am
+
+def nowString():
+    """Returns the current GMT system date in basic ISO8601 format: YYMMDDThhmmssZ"""
+    import machine
+    rtc = machine.RTC()
+    timestamp = rtc.datetime()
+    timeISO8601 = '%4d%02d%02dT%02d%02d%02dZ' % (
+        timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
+    return timeISO8601
+
+
+def set_time_secs(secs):
+    """secs: Seconds since 01-Jan-2000 12:00a GMT"""
     # out_time = utime.localtime(secs)                # Doesn't work
     out_time = utime.gmtime(secs)                   # Doesn't work
     print("+++++++++++++++++++++")
     return out_time
 
 
-def set_time_tuple(input_tuple):  # [Y, M, D, dow, h, m, s, us]
+def set_time_tuple(input_tuple):
+    """input_tuple: [Y, M, D, dow, h, m, s, us]"""
     # out_time = utime.mktime(input_tuple)            # Doesn't work
     # out_time = machine.RTC().init(input_tuple)      # works
     out_time = machine.RTC().datetime(input_tuple)  # works
@@ -24,6 +48,7 @@ def set_time_tuple(input_tuple):  # [Y, M, D, dow, h, m, s, us]
 
 
 def set_time_ntp():
+    """Set system time using network time protocol"""
     try:
         import ntptime
         print("ntptime.settime(): ", ntptime.settime(), "------------------")
@@ -32,12 +57,12 @@ def set_time_ntp():
 
 
 def print_datetime():
-    # MicroPython 1.13 docs say that weekday is
-    # weekday is 1-7 for Monday through Sunday
-    # but actually,
-    # weekday is 0-6 for Monday through Sunday
+       # MicroPython 1.13 docs say that weekday is
+       # weekday is 1-7 for Monday through Sunday
+       # but actually,
+       # weekday is 0-6 for Monday through Sunday
     print("machine.RTC().datetime():", machine.RTC().datetime())
-    print("                              Y  M  D wd  h  m  s  us") # last one is microseconds
+    print("                              Y  M  D wd  h  m  s  us")  # last one is microseconds
 
 
 def print_localtime():
@@ -70,10 +95,13 @@ def print_ntp_time():
 
 def print_all():
     print()
+    print("nowString():      ", nowString())          # Prints YYMMDDThhmmssZ
+    # Prints YY-MM-DDThh:mm:ssZ
+    print("nowStringExtended:", nowStringExtended())
     print_ntp_time()  # Prints seconds
     print_datetime()  # Prints tuple
-    print_localtime() # Prints tuple
-    # print_gmtime()    # Prints tuple and is exactly the same as localtime()
+    # print_localtime() # Prints tuple and is exactly the same as gmtime()
+    print_gmtime()    # Prints tuple
     print_time()      # Prints seconds
 
 
@@ -88,7 +116,7 @@ def demo():
     us = 123456  # Microseconds: Generally irrelevant
 
     print_all()
-    
+
     print("Setting to [", Y, M, D, dow, h, m, s, us, "]")
     set_time_tuple([Y, M, D, dow, h, m, s, us])
 

@@ -1,3 +1,6 @@
+# my_voltage.py
+"""Custom voltage methods"""
+
 from machine import Pin
 from machine import ADC
 

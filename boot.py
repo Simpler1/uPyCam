@@ -3,10 +3,9 @@ import config
 import network
 import utime
 import ntptime
-import netLocalTime
-
-# ftp access
-#from ftp import ftpserver
+import ble_uart_peripheral
+from my_time import nowStringExtended
+from my_led import cycleLed
 
 
 def do_connect():
@@ -15,8 +14,8 @@ def do_connect():
     timed_out = False
 
     if not sta_if.isconnected():
-        print('connecting to network...')
-        print("Before Connecting:", netLocalTime.getTime())
+        print('\nConnecting to network...')
+        print("Before Connecting:", nowStringExtended())
         sta_if.active(True)
         sta_if.connect(config.wifi_config["ssid"],
                        config.wifi_config["password"])
@@ -29,14 +28,15 @@ def do_connect():
 
     if sta_if.isconnected():
         try:
-            # Eastern Standard Time is 5 hours earlier than GMT
-            netLocalTime.setLocalTime(-5)
+            ntptime.settime()
+            cycleLed(3)
         except Exception as e:
-            print("Local Time Error ocurred: " + str(e))
-        print("After Connecting: ", netLocalTime.getTime())
-        print('network config:', sta_if.ifconfig())
+            print("NTP Time Error ocurred: " + str(e))
+            cycleLed(1)
+        print("After Connecting: ", nowStringExtended())
+        print('Network config:', sta_if.ifconfig())
     else:
-        print('internet not available')
+        print('Internet not available')
 
 
 do_connect()

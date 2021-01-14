@@ -1,4 +1,8 @@
+# my_led.py
+"""Custom LED methods"""
+
 from machine import Pin
+from utime import sleep_ms
 
 led = Pin(33, Pin.OUT)  # GPIO 33 is the ESP32-CAM on board red LED
 flash = Pin(4, Pin.OUT)  # GPIO 4 is the ESP32-CAM on board flash LED
@@ -27,6 +31,14 @@ def getFlash():
     actualValue = flash.value()
     getValue = "off" if actualValue == 0 else "on"
     return getValue
+
+
+def cycleLed(x):
+    for i in range(x):
+        sleep_ms(500)
+        setLed(True)
+        sleep_ms(500)
+        setLed(False)
 
 
 def demo():

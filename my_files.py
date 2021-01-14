@@ -1,4 +1,7 @@
-import uos
+# my_files.py
+"""Custom file methods"""
+
+from uos import listdir
 
 
 def filterJPG(filename):
@@ -8,8 +11,9 @@ def filterJPG(filename):
         return False
 
 
-def jpgCount():
-    files = uos.listdir('/sd/')
+def jpgCount(directory):
+    """Returns the number of .jpg files in the directory"""
+    files = listdir(directory)
     jpgFiles = list(filter(filterJPG, files))
     count = len(jpgFiles)
     return count
