@@ -1,25 +1,33 @@
+# From: https://github.com/micropython/micropython/tree/21c293fbcd1f9d5bafac300b5da265b4efd2be52/examples/bluetooth
 # This example demonstrates a peripheral implementing the Nordic UART Service (NUS).
 
 import bluetooth
 from ble_advertising import advertising_payload
 from micropython import const
-from my_time import nowStringExtended
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
 _IRQ_GATTS_WRITE = const(3)
 _IRQ_MTU_EXCHANGED = const(21)
 
-_FLAG_WRITE = const(0x0008)
-_FLAG_NOTIFY = const(0x0010)
-
 # https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
 _ADV_APPEARANCE_GENERIC_COMPUTER = const(128)
 
+# https://www.bluetooth.com/specifications/assigned-numbers/
+# https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
 _UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-_UART_TX = (bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"), _FLAG_NOTIFY,)
-_UART_RX = (bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"), _FLAG_WRITE,)
-_UART_SERVICE = (_UART_UUID, (_UART_TX, _UART_RX),)
+_UART_RX = (
+    bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"),
+    bluetooth.FLAG_WRITE,
+)
+_UART_TX = (
+    bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"),
+    bluetooth.FLAG_NOTIFY,
+)
+_UART_SERVICE = (
+    _UART_UUID,
+    (_UART_TX, _UART_RX),
+)
 
 
 class BLEUART:
@@ -36,7 +44,9 @@ class BLEUART:
         self._handler = None
         # Optionally add services=[_UART_UUID], but this is likely to make the payload too large.
         self._payload = advertising_payload(
-            name=name, appearance=_ADV_APPEARANCE_GENERIC_COMPUTER)
+            name=name,
+            appearance=_ADV_APPEARANCE_GENERIC_COMPUTER
+        )
         self._advertise()
 
     def irq(self, handler):
@@ -65,7 +75,7 @@ class BLEUART:
                     self._handler()
         elif event == _IRQ_MTU_EXCHANGED:
             # ATT MTU exchange complete (either initiated by us or the remote device).
-            conn_handle, mtu = data    # print received data
+            conn_handle, mtu = data
             print("_IRQ_MTU_EXCHANGED")
             print("conn_handle:", conn_handle)
             print("mtu:", mtu)
@@ -93,19 +103,9 @@ class BLEUART:
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
 
-def launch():
-    ble = bluetooth.BLE()
-    uart = BLEUART(ble)
-
-    def on_rx():
-        print("rx: ", uart.read().decode('UTF-8').strip())
-
-    uart.irq(handler=on_rx)
-    return uart
-
-
 def demo():
     from utime import sleep
+    from my_time import nowStringExtended
 
     ble = bluetooth.BLE()
     uart = BLEUART(ble)

@@ -3,7 +3,6 @@ import config
 import network
 import utime
 import ntptime
-import ble_uart_peripheral
 from my_time import nowStringExtended
 from my_led import cycleLed
 
