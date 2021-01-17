@@ -4,11 +4,8 @@
 # any connected central every 10 seconds.
 
 import bluetooth
-import random
 import struct
-import time
 from ble_advertising import advertising_payload
-
 from micropython import const
 
 _IRQ_CENTRAL_CONNECT = const(1)
@@ -79,6 +76,9 @@ class BLETemperature:
 
 
 def demo():
+    import random
+    from utime import sleep
+
     ble = bluetooth.BLE()
     temp = BLETemperature(ble)
 
@@ -91,7 +91,7 @@ def demo():
         temp.set_temperature(t, notify=i == 0, indicate=False)
         # Random walk the temperature.
         t += random.uniform(-0.5, 0.5)
-        time.sleep_ms(1000)
+        sleep(1)
 
 
 if __name__ == "__main__":

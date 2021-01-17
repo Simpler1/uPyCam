@@ -18,9 +18,10 @@ import utime
 import camera
 from ftp import ftpserver
 from config import *
+import bluetooth
 import my_files
 from my_time import nowStringExtended
-from my_bluetooth import ble_device
+from my_bluetooth import BLE_SERVER
 
 if app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
@@ -60,7 +61,8 @@ except Exception as e:
     utime.sleep_ms(5000)
     machine.reset()
 try:
-    my_device = ble_device()
+    ble = bluetooth.BLE()
+    my_device = BLE_SERVER(ble)
 except Exception as e:
     print("BLE Error:", e)
 
