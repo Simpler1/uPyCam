@@ -2,7 +2,7 @@ import bluetooth
 import struct
 from ble_advertising import advertising_payload
 from micropython import const
-from my_time import nowString
+from my_time import nowBytes
 import utime
 
 _IRQ_CENTRAL_CONNECT = const(1)
@@ -60,8 +60,10 @@ _PROX_CHAR = (
 )
 _PROX_TIME_CHAR = (
     bluetooth.UUID(0x2A08),
-    # 0x2A08  WHAT FORMAT IS THIS LOOKING FOR?
+    # 0x2A08  format is YYYYMMDDhhmmss as a hex byte string
+    #    b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
     # 0x2A2B  CurrentTime  =>  ExactTime256, Timezone, DST, Method of update  ??
+    # https://speakerdeck.com/ephread/bluetooth-low-energy?slide=21
     bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY,
 )
 _PROX_SERVICE = (
@@ -90,8 +92,6 @@ class BLE_SERVER:
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, 100, True)
         self._rx_buffer = bytearray()
-        self._rx_handler = lambda: print(
-            "rx: ", self.read().decode('UTF-8').strip())
         self._connections = set()
         self._payload = advertising_payload(
             name=name,
@@ -125,8 +125,18 @@ class BLE_SERVER:
             conn_handle, value_handle = data
             if conn_handle in self._connections and value_handle == self._rx_handle:
                 self._rx_buffer += self._ble.gatts_read(self._rx_handle)
-                if self._rx_handler:
-                    self._rx_handler()
+                rx = self.read().decode('UTF-8').strip()
+                print("rx: ", rx)
+                if rx == "scan":
+                    print("starting scan")
+                    self._ble.gap_scan()
+                elif rx == "stop":
+                    print("stopping scan")
+                    self._ble.gap_scan(None)
+
+
+
+
         elif event == _IRQ_MTU_EXCHANGED:
             # ATT MTU exchange complete (either initiated by us or the remote device).
             conn_handle, mtu = data
@@ -142,7 +152,9 @@ class BLE_SERVER:
             print("_IRQ_SCAN_RESULT")
             addr_type, addr, adv_type, rssi, adv_data = data
             positive_rssi = 100 + rssi
-            now = nowString() # TODO:  WHAT IS THIS FORMAT SUPPOSED TO BE ?????
+            # now = nowString() # TODO:  WHAT IS THIS FORMAT SUPPOSED TO BE ?????
+            # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
+            now = nowBytes()
             print('positive_rssi:', positive_rssi, '   now:', now)
             self._ble.gatts_write(self._prox_handle, struct.pack(
             "<h", positive_rssi))

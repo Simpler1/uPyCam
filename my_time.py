@@ -9,6 +9,7 @@
 #
 # time and utime classes will not set the time.
 
+import struct
 
 def nowStringExtended():
     """Returns the current GMT system date in extended ISO8601 format: YY-MM-DDThh:mm:ssZ """
@@ -28,6 +29,22 @@ def nowString():
     timeISO8601 = '%4d%02d%02dT%02d%02d%02dZ' % (
         timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
     return timeISO8601
+
+
+def nowBytes():
+    """Returns the current GMT system date in a format that Bluetooth Low Energy UUID 0x2A08 expects"""
+    # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
+    import machine
+    rtc = machine.RTC()
+    timestamp = rtc.datetime()
+    time_bytes = b''
+    time_bytes += struct.pack("<h", timestamp[0])
+    time_bytes += struct.pack("b", timestamp[1])
+    time_bytes += struct.pack("b", timestamp[2])
+    time_bytes += struct.pack("b", timestamp[4])
+    time_bytes += struct.pack("b", timestamp[5])
+    time_bytes += struct.pack("b", timestamp[6])
+    return time_bytes
 
 
 def set_time_secs(secs):
@@ -57,12 +74,13 @@ def set_time_ntp():
 
 
 def print_datetime():
-       # MicroPython 1.13 docs say that weekday is
-       # weekday is 1-7 for Monday through Sunday
-       # but actually,
-       # weekday is 0-6 for Monday through Sunday
+    # MicroPython 1.13 docs say that weekday is
+    # weekday is 1-7 for Monday through Sunday
+    # but actually,
+    # weekday is 0-6 for Monday through Sunday
     print("machine.RTC().datetime():", machine.RTC().datetime())
-    print("                              Y  M  D wd  h  m  s  us")  # last one is microseconds
+    # last one is microseconds
+    print("                              Y  M  D wd  h  m  s  us")
 
 
 def print_localtime():
