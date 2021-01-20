@@ -120,10 +120,6 @@ def get_sunrise_sunset( in_year, in_month, in_day, is_rise=True,
 
   #8. calculate local mean time of rising/setting
   sun_event_time = sun_local_angle_h + sra_h - ( 0.06571 * rise_or_set_time ) - 6.622 # original was 6.589
-  if sun_event_time < 0: 
-    sun_event_time += 24
-  elif sun_event_time > 24:
-    sun_event_time -= 24
   print("sun event time ", sun_event_time)
 
   #9. adjust back to UTC
@@ -131,8 +127,14 @@ def get_sunrise_sunset( in_year, in_month, in_day, is_rise=True,
   print("ut: ", ut, "hours")
 
   #10. convert UT value to local time zone of latitude/longitude
-  hours = int(ut) + dst_offset
-  minutes = int((ut-int(ut)) * 60)
+  local_time = ut + dst_offset
+  if local_time < 0: 
+    local_time += 24
+  elif local_time > 24:
+    local_time -= 24
+  print("local time: ", local_time, "hours")
+  hours = int(local_time)
+  minutes = int(( local_time - hours ) * 60)
   time = "{:>2}".format(hours) + ":" + "{:>2}".format(minutes)
   time = time.replace(" ", "0")
   return time
