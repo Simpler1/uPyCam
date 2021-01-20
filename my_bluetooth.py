@@ -4,6 +4,7 @@ from ble_advertising import advertising_payload
 from micropython import const
 from my_time import nowBytes
 import utime
+import my_files
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -56,7 +57,13 @@ _ENV_SENSE_SERVICE = (
 _PROX_SENSE_UUID = bluetooth.UUID("3E099910-293F-11E4-93BD-AFD0FE6D1DFD")
 _PROX_CHAR = (
     bluetooth.UUID("3E099911-293F-11E4-93BDA-FD0FE6D1DFD"),
-    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    (
+      (
+        bluetooth.UUID(0x2901),
+        bluetooth.FLAG_READ | bluetooth.FLAG_WRITE
+      ),
+    )
 )
 _PROX_TIME_CHAR = (
     bluetooth.UUID(0x2A08),
@@ -80,7 +87,7 @@ class BLE_SERVER:
         (
             (self._tx_handle, self._rx_handle),
             (self._temp_handle,),
-            (self._prox_handle, self._prox_time_handle),
+            (self._prox_handle, self._prox_desc_handle, self._prox_time_handle),
         ) = self._ble.gatts_register_services(
             (
               _UART_SERVICE,
@@ -88,7 +95,8 @@ class BLE_SERVER:
               _PROX_SERVICE,
             )
         )
-
+        self._ble.gatts_write(self._prox_desc_handle, "RSSI (0-127)")
+        
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, 100, True)
         self._rx_buffer = bytearray()
@@ -133,7 +141,8 @@ class BLE_SERVER:
                 elif rx == "stop":
                     print("stopping scan")
                     self._ble.gap_scan(None)
-
+                elif rx == "files":
+                    print("files")
 
 
 
@@ -151,7 +160,7 @@ class BLE_SERVER:
         elif event == _IRQ_SCAN_RESULT:
             print("_IRQ_SCAN_RESULT")
             addr_type, addr, adv_type, rssi, adv_data = data
-            positive_rssi = 100 + rssi
+            positive_rssi = 127 + rssi
             # now = nowString() # TODO:  WHAT IS THIS FORMAT SUPPOSED TO BE ?????
             # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
             now = nowBytes()

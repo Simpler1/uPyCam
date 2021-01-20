@@ -5,6 +5,7 @@ import utime
 import ntptime
 from my_time import nowStringExtended
 from my_led import cycleLed
+from esp32 import raw_temperature
 
 
 def do_connect():
@@ -38,4 +39,5 @@ def do_connect():
         print('Internet not available')
 
 
+print("  esp32.raw_temperature:", str(raw_temperature()) + chr(176) + "F")
 do_connect()

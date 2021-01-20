@@ -37,13 +37,7 @@ def nowBytes():
     import machine
     rtc = machine.RTC()
     timestamp = rtc.datetime()
-    time_bytes = b''
-    time_bytes += struct.pack("<h", timestamp[0])
-    time_bytes += struct.pack("b", timestamp[1])
-    time_bytes += struct.pack("b", timestamp[2])
-    time_bytes += struct.pack("b", timestamp[4])
-    time_bytes += struct.pack("b", timestamp[5])
-    time_bytes += struct.pack("b", timestamp[6])
+    time_bytes = struct.pack("<hbbbbb", timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
     return time_bytes
 
 
@@ -121,6 +115,11 @@ def print_all():
     # print_localtime() # Prints tuple and is exactly the same as gmtime()
     print_gmtime()    # Prints tuple
     print_time()      # Prints seconds
+
+
+# Sunrise equation:  https://en.wikipedia.org/wiki/Sunrise_equation
+# cos(w0) = -tan(theta) x tan(delta)
+
 
 
 def demo():
