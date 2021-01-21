@@ -39,5 +39,5 @@ def do_connect():
         print('Internet not available')
 
 
-print("  esp32.raw_temperature:", str(raw_temperature()) + chr(176) + "F")
+print("\n  esp32.raw_temperature:", str(raw_temperature()) + chr(176) + "F")
 do_connect()

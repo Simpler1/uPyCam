@@ -8,7 +8,7 @@
 import math, sys
 
 def get_sunrise_sunset( in_year, in_month, in_day, is_rise=True, 
-    lat_d=38.95, lon_d=-84.35, dst_offset=-5, zenith_d=91):
+    lat_d=38.95, lon_d=-84.35, tz_offset=-5, zenith_d=91):
   # lon_d:
   #   Negative is west of Greenwich Mean Time
 
@@ -127,7 +127,7 @@ def get_sunrise_sunset( in_year, in_month, in_day, is_rise=True,
   print("ut: ", ut, "hours")
 
   #10. convert UT value to local time zone of latitude/longitude
-  local_time = ut + dst_offset
+  local_time = ut + tz_offset
   if local_time < 0: 
     local_time += 24
   elif local_time > 24:
@@ -145,13 +145,13 @@ def demo1():
   zenith = 90 + 50/60
   lat_d = 40.9
   lon_d = -74.3
-  dst_offset = -4
+  tz_offset = -4
   d = 25
   m = 6
   y = 1978
   is_rise = True
 
-  print("Local Sunrise at", get_sunrise_sunset(y, m, d, is_rise, lat_d, lon_d, dst_offset, zenith))
+  print("Local Sunrise at", get_sunrise_sunset(y, m, d, is_rise, lat_d, lon_d, tz_offset, zenith))
   print("Should be:       05:27")
 
 # Test2 (From original document)  Nautical evening twilight
@@ -159,13 +159,13 @@ def demo2():
   zenith = 102
   lat_d = -6.0
   lon_d = 117.0
-  dst_offset = 8 # This is not accounted for in the original document and time is listed as UT
+  tz_offset = 8 # This is not accounted for in the original document and time is listed as UT
   d = 1
   m = 10
   y = 1978
   is_rise = False
 
-  print("Local Sunset at", get_sunrise_sunset(y, m, d, is_rise, lat_d, lon_d, dst_offset, zenith))
+  print("Local Sunset at", get_sunrise_sunset(y, m, d, is_rise, lat_d, lon_d, tz_offset, zenith))
   print("Should be:      18:51")
 
 # Test 3 (My local test)
@@ -173,14 +173,14 @@ def demo3():
   zenith = 91
   lat_d = 38.95
   lon_d = -84.35
-  dst_offset = -5
+  tz_offset = -5
   d = 19
   m = 1
   y = 2021
 
-  print("Local Sunrise at", get_sunrise_sunset(y, m, d, True, lat_d, lon_d, dst_offset, zenith))
+  print("Local Sunrise at", get_sunrise_sunset(y, m, d, True, lat_d, lon_d, tz_offset, zenith))
   print("Should be        07:53\n")
-  print("Local Sunset at ", get_sunrise_sunset(y, m, d, False, lat_d, lon_d, dst_offset, zenith))
+  print("Local Sunset at ", get_sunrise_sunset(y, m, d, False, lat_d, lon_d, tz_offset, zenith))
   print("Should be        17:43\n")
 
 if __name__ == "__main__":

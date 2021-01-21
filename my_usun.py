@@ -1,38 +1,51 @@
 from math import cos,sin,tan,acos,asin,atan,floor
 from math import degrees as deg, radians as rad
 
-def get_sunrise_sunset( in_year, in_month, in_day, is_rise=True, 
-    lat_d=38.95, lon_d=-84.35, dst_offset=-5, zenith_d=91):
-  # lon_d:
-  #   Longitude as a degree decimal.  
-  #   Negative is west of Greenwich Mean Time
-
-  # is_rise:
-  #   True = sunrise
-  #   False = sunset
-
-  # zenith_d:
-  # offical      = 90 degrees 50' = 90 + 50/60
-  # civil        = 96 degrees
-  # nautical     = 102 degrees
-  # astronomical = 108 degrees
-
+def get_sunrise_sunset( year, month, day, is_rise=True,
+  tz_offset=0, dst=False, lat_d=38.95, lon_d=-84.35, zenith_d=91 ):
+  """
+  year:
+    4 digit int
+  month:
+    Jan-Dec as 1 to 12
+  day:
+    Day of the month (1 to 31)
+  is_rise:
+    True = sunrise
+    False = sunset
+  tz_offset:
+    Time Zone Offset
+  dst:
+    Daylight Saving Time
+  lat_d:
+    Lattitude as a degree decimal (-90 to 90)
+    Negative is the southern hemisphere
+  lon_d:
+    Longitude as a degree decimal (-180 to 180)
+    Negative is west of Greenwich Mean Time
+  zenith_d:
+    offical      = 90 degrees 50' = 90 + 50/60
+    civil        = 96 degrees
+    nautical     = 102 degrees
+    astronomical = 108 degrees
+  """
+  tz_offset = tz_offset + 1 if dst else tz_offset
   zenith_r = rad(zenith_d)
   lat_r = rad(lat_d)
   lon_r = rad(lon_d)
 
   #1. first calculate the day of the year
-  n1 = floor( 275 * in_month / 9.0 )
-  n2 = floor( ( in_month + 9 ) / 12.0 )
-  n3 = ( 1 + floor( in_year - 4 * floor( in_year / 4.0 ) + 2 ) / 3.0 )
-  doy = n1 - ( n2 * n3 ) + in_day - 30
+  n1 = floor( 275 * month / 9.0 )
+  n2 = floor( ( month + 9 ) / 12.0 )
+  n3 = ( 1 + floor( year - 4 * floor( year / 4.0 ) + 2 ) / 3.0 )
+  d_o_y = n1 - ( n2 * n3 ) + day - 30
 
   #2. convert the longitude to hour value and calculate an approximate time
   lon_h = lon_d / 15.0
   if is_rise:
-    rise_or_set_time = doy + ( ( 6 - lon_h ) / 24.0 )
+    rise_or_set_time = d_o_y + ( ( 6 - lon_h ) / 24.0 )
   else:
-    rise_or_set_time = doy + ( ( 18 - lon_h ) / 24.0 )
+    rise_or_set_time = d_o_y + ( ( 18 - lon_h ) / 24.0 )
 
   #3. calculate the Sun's mean anomaly
   sun_mean_anomaly_d = ( 0.9856 * rise_or_set_time ) - 3.289  # original was 3.763
@@ -97,16 +110,16 @@ def get_sunrise_sunset( in_year, in_month, in_day, is_rise=True,
   ut = sun_event_time - lon_h
 
   #10. convert UT value to local time zone of latitude/longitude
-  local_time = ut + dst_offset
+  local_time = ut + tz_offset
   if local_time < 0: 
     local_time += 24
   elif local_time > 24:
     local_time -= 24
   hours = int(local_time)
   minutes = int(( local_time - hours ) * 60)
-  time = "{:>2}".format(hours) + ":" + "{:>2}".format(minutes)
-  time = time.replace(" ", "0")
-  return time
+  # time = "{:>2}".format(hours) + ":" + "{:>2}".format(minutes)
+  # time = time.replace(" ", "0")
+  return (hours, minutes)
 
 
 # Test 1 (From original document)
@@ -114,14 +127,15 @@ def demo1():
   zenith = 90 + 50/60
   lat_d = 40.9
   lon_d = -74.3
-  dst_offset = -4
+  tz_offset = -4
+  dst = False
   y = 1978
   m = 6
   d = 25
   is_rise = True
 
-  print("Local Sunrise at", get_sunrise_sunset(y, m, d, is_rise, lat_d, lon_d, dst_offset, zenith))
-  print("Should be:       05:27")
+  print("Local Sunrise at", get_sunrise_sunset(y, m, d, is_rise, tz_offset, dst, lat_d, lon_d, zenith))
+  print("Should be:       (5, 27)")
 
 
 # Test2 (From original document)
@@ -129,14 +143,15 @@ def demo2():
   zenith = 102
   lat_d = -6.0
   lon_d = 117.0
-  dst_offset = 8
+  tz_offset = 8
+  dst = False
   y = 1978
   m = 10
   d = 1
   is_rise = False
 
-  print("Local Sunset at", get_sunrise_sunset(y, m, d, is_rise, lat_d, lon_d, dst_offset, zenith))
-  print("Should be:      18:51")
+  print("Local Sunset at", get_sunrise_sunset(y, m, d, _rise, tz_offset, dst, islat_d, lon_d, zenith))
+  print("Should be:      (18, 51)")
 
 
 # Test 3 (My local test)
@@ -144,20 +159,21 @@ def demo3():
   zenith = 91
   lat_d = 38.95
   lon_d = -84.35
-  dst_offset = -5
+  tz_offset = -5
+  dst = False
   y = 2021
   m = 1
   d = 19
 
-  print("Local Sunrise at", get_sunrise_sunset(y, m, d, True, lat_d, lon_d, dst_offset, zenith))
-  print("Should be        07:53\n")
-  print("Local Sunset at ", get_sunrise_sunset(y, m, d, False, lat_d, lon_d, dst_offset, zenith))
-  print("Should be        17:43\n")
+  print("Local Sunrise at", get_sunrise_sunset(y, m, d, True, tz_offset, dst, lat_d, lon_d, zenith))
+  print("Should be        (7, 53)\n")
+  print("Local Sunset at", get_sunrise_sunset(y, m, d, False, tz_offset, dst, lat_d, lon_d, zenith))
+  print("Should be       (17, 43)\n")
   from utime import gmtime
   now = gmtime()
   print("Today is", now[0:3])
-  print("Sunrise today at", get_sunrise_sunset(now[0], now[1], now[2]))
-  print("Sunset today at ", get_sunrise_sunset(now[0], now[1], now[2], False))
+  print("Sunrise today at", get_sunrise_sunset(now[0], now[1], now[2], True, -5, False))
+  print("Sunset today at", get_sunrise_sunset(now[0], now[1], now[2], False, -5, False))
 
 if __name__ == "__main__":
   demo3()

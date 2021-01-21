@@ -22,6 +22,7 @@ import bluetooth
 import my_files
 from my_time import nowStringExtended
 from my_bluetooth import BLE_SERVER
+from my_usun import get_sunrise_sunset
 
 if app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
@@ -70,6 +71,13 @@ error_counter = 0
 loop = True
 while loop:
     try:
+        now_ut = utime.gmtime()
+        sunrise_ut = get_sunrise_sunset(now_ut[0], now_ut[1], now_ut[2])
+        sunset_ut = get_sunrise_sunset(now_ut[0], now_ut[1], now_ut[2], False)
+        sleep_time_s = utime.mktime((now_ut[0], now_ut[1], now_ut[2]+1, sunrise_ut[0], sunrise_ut[1], 0, 0, 0)) - utime.mktime(now_ut)
+        if utime.mktime(now_ut) > utime.mktime((now_ut[0], now_ut[1], now_ut[2]+1, sunset_ut[0], sunset_ut[1], 0, 0, 0)):
+            machine.lightsleep(sleep_time_s * 1000)
+
         # prepare for photo
         if app_config['flash']:
             led.value(1)
