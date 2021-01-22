@@ -6,16 +6,23 @@ TODO:
 -----
 Battery
 Build / 3D Print a case
-Sunrise/Sunset wake/sleep  (light sensor or time based?)
 BLE
-  Send date/time from mobile
+  Time Service
+    Send date/time from mobile
+  File Service
+    How many photos on SD card?
+  Voltage Service
+    Battery voltage
   Mobile app to connect
     Check number of photos
     Check voltage
     Download photos ??
+    View old time / updated time / difference
 Solar Panel
 Voltage Meter
 Motion Sensor
+Light Sensor
+  Wake/Sleep based on light sensor value
 Temperature Sensor
 
 

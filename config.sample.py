@@ -13,8 +13,9 @@
 # limitations under the License.
 
 app_config = {
-    'sleep-ms': 59000,
-    'deepSleepBootTime-ms': 7800,
+    'sleep_ms': 60000,
+    'approx_proc_time_ms': 2600,
+    'deepSleepBootTime_ms': 7800,
     'flash': False,
     'max-error': 10,
     'ftp': False,
