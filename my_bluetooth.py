@@ -161,7 +161,6 @@ class BLE_SERVER:
             print("_IRQ_SCAN_RESULT")
             addr_type, addr, adv_type, rssi, adv_data = data
             positive_rssi = 127 + rssi
-            # now = nowString() # TODO:  WHAT IS THIS FORMAT SUPPOSED TO BE ?????
             # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
             now = nowBytes()
             print('positive_rssi:', positive_rssi, '   now:', now)
