@@ -25,7 +25,7 @@ exiftool \
 -r \
 -P \
 -ext jpg \
--d "./%Y%m%d_%H%M%S.%%le" \
+-d "./%f-%Y%m%d_%H%M%S.%%le" \
 "-filename<FileModifyDate" \
 "./"
 
@@ -36,7 +36,7 @@ exiftool \
 -r \
 -P \
 -ext jpg \
--d "./%Y%m%d_%H%M%S.%%le" \
+-d "./%f-%Y%m%d_%H%M%S.%%le" \
 "-testname<FileModifyDate" \
 "./"
 
