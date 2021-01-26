@@ -5,6 +5,7 @@ Timelapse
 TODO:
 -----
 Battery
+Power switch (to swap SD Card)
 Build / 3D Print a case
 BLE
   Time Service
