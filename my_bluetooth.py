@@ -39,9 +39,10 @@ _CURRENT_TIME_CHAR = (
     bluetooth.UUID(0x2A2B),
     bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
+# org.bluetooth.characteristic.date_time
 _DATE_TIME_CHAR = (
     bluetooth.UUID(0x2A08),
-    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
 _CURRENT_TIME_SERVICE = (
     _CURRENT_TIME_UUID,
@@ -198,8 +199,8 @@ class BLE_SERVER:
         """date_time is input as bytes string"""
         # 0x2A08 date_time is stored as a bytes string uint16 uint8 uint8 uint8 uint8 uint8
         if not date_time:
-            print("Getting date_time:",date_time)
             now = nowBytes()
+            print("Getting date_time:", struct.unpack("<hbbbbb", now))
             self._ble.gatts_write(self._date_time_handle, now)
         else:
             print("Setting date_time:",date_time)

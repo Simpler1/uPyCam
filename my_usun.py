@@ -165,6 +165,7 @@ def demo3():
   m = 1
   d = 19
 
+  print("\n")
   print("Local Sunrise at", get_sunrise_sunset(y, m, d, True, tz_offset, dst, lat_d, lon_d, zenith))
   print("Should be        (2021, 1, 19, 7, 53, 0)\n")
   print("Local Sunset at", get_sunrise_sunset(y, m, d, False, tz_offset, dst, lat_d, lon_d, zenith))

@@ -58,7 +58,7 @@ try:
         u.start_thread()
 
 except Exception as e:
-    print("Error ocurred: " + str(e))
+    print("Startup Error:", str(e))
     utime.sleep_ms(5000)
     machine.reset()
 try:
@@ -68,6 +68,7 @@ except Exception as e:
     print("BLE Error:", e)
 
 tz = -5
+day = 0
 error_counter = 0
 loop = True
 while loop:
@@ -75,9 +76,13 @@ while loop:
         now_ut = utime.gmtime()
         # Need the local time to know what day it is (which changes with the timezone)
         now_lt = utime.gmtime(utime.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
-        ss_lt = get_sunrise_sunset(now_lt[0], now_lt[1], now_lt[2], False, tz)
-        sr_lt = get_sunrise_sunset(now_lt[0], now_lt[1], now_lt[2]+1, True, tz)
+        if day != now_lt[2]:
+            day = now_lt[2]
+            ss_lt = get_sunrise_sunset(now_lt[0], now_lt[1], now_lt[2], False, tz)
+            sr_lt = get_sunrise_sunset(now_lt[0], now_lt[1], now_lt[2]+1, True, tz)
+            print("\nSunset:", ss_lt, " Sunrise:", sr_lt, "\n")
         sleep_time_s = utime.mktime(sr_lt + (0, 0)) - utime.mktime(now_lt)
+        print("Now:   ", now_lt, " Sleep time:", utime.localtime(sleep_time_s)[3:6])
         if utime.mktime(now_lt) > utime.mktime(ss_lt + (0, 0)):
             machine.lightsleep(sleep_time_s * 1000)
 
@@ -103,8 +108,8 @@ while loop:
         print("Picture", filename, "taken at:", nowStringExtended())
         # sleep
         utime.sleep_ms(app_config['sleep_ms'] - app_config['approx_proc_time_ms'])
-        # machine.lightsleep(app_config['sleep_ms'])
-        # machine.deepsleep(app_config['sleep_ms'] -
+        # machine.lightsleep(app_config['sleep_ms'] - app_config['approx_proc_time_ms'])
+        # machine.deepsleep(app_config['sleep_ms'] - app_config['approx_proc_time_ms'] -
         #                   app_config['deepSleepBootTime_ms'])
 
     except KeyboardInterrupt:
@@ -112,7 +117,7 @@ while loop:
         loop = False
 
     except Exception as e:
-        print("Error ocurred: " + str(e))
+        print("Error in main loop:", str(e))
         error_counter = error_counter + 1
         if error_counter > app_config['max-error']:
             machine.reset()
