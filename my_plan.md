@@ -39,11 +39,11 @@ Boot
   Enable BLE (Bluetooth Low Energy)
     If connected
       Blink LED
-      Send
+      Send (notify?)
         Old date/time
         Number of photos
         Battery voltage
-      Receive
+      Receive (write?)
         Updated date/time from mobile
   If no BLE connection for 1 minute, disable BLE
 
@@ -119,7 +119,7 @@ ESP32-CAM
       Characteristic:  Reset button
         Descriptor:  
 
-Cell phone with Flutter app
+Cell phone with Flutter app (or maybe just "nRF Connect")
   GAP Role:  Central
   GATT:  Client
 

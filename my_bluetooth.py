@@ -2,20 +2,18 @@ import bluetooth
 import struct
 from ble_advertising import advertising_payload
 from micropython import const
-from my_time import nowBytes
+from my_time import nowBytes, set_time_ble
 import utime
 import my_files
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
 _IRQ_GATTS_WRITE = const(3)
+# _IRQ_GATTS_READ_REQUEST = const(4)  # Only supported on STM32 (not ESP32-CAM)
 _IRQ_SCAN_RESULT = const(5)
 _IRQ_SCAN_DONE = const(6)
 _IRQ_GATTS_INDICATE_DONE = const(20)
 _IRQ_MTU_EXCHANGED = const(21)
-
-# https://specificationrefs.bluetooth.com/assigned-values/Appearance%20Values.pdf
-_ADV_APPEARANCE_GENERIC_COMPUTER = const(128)
 
 # https://www.bluetooth.com/specifications/assigned-numbers/
 # https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
@@ -34,23 +32,20 @@ _UART_SERVICE = (
 )
 
 
-# org.bluetooth.service.environmental_sensing
-_ENV_SENSE_UUID = bluetooth.UUID(0x181A)
-# org.bluetooth.characteristic.temperature
-_TEMP_CHAR = (
-    bluetooth.UUID(0x2A6E),
-    # TODO: Why can't I just swap 0x2A6E for 0x2A1C ?
-    #       0x2A6E is just a temperature in Celcius
-    #       0x2A1C is a variable length structure containing:
-    #          Flags
-    #          Temperature Measurement Value
-    #          Time Stamp (optional based on Flags value)
-    #          Temperature Type (optional based on Flags value)
-    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_INDICATE,
+# org.bluetooth.service.current_time
+_CURRENT_TIME_UUID = bluetooth.UUID(0x1805)
+# org.bluetooth.characteristic.current_time
+_CURRENT_TIME_CHAR = (
+    bluetooth.UUID(0x2A2B),
+    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
-_ENV_SENSE_SERVICE = (
-    _ENV_SENSE_UUID,
-    (_TEMP_CHAR,),
+_DATE_TIME_CHAR = (
+    bluetooth.UUID(0x2A08),
+    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+)
+_CURRENT_TIME_SERVICE = (
+    _CURRENT_TIME_UUID,
+    (_CURRENT_TIME_CHAR, _DATE_TIME_CHAR),
 )
 
 
@@ -86,12 +81,12 @@ class BLE_SERVER:
         self._ble.irq(self._irq)
         (
             (self._tx_handle, self._rx_handle),
-            (self._temp_handle,),
+            (self._current_time_handle, self._date_time_handle),
             (self._prox_handle, self._prox_desc_handle, self._prox_time_handle),
         ) = self._ble.gatts_register_services(
             (
               _UART_SERVICE,
-              _ENV_SENSE_SERVICE,
+              _CURRENT_TIME_SERVICE,
               _PROX_SERVICE,
             )
         )
@@ -105,10 +100,9 @@ class BLE_SERVER:
             name=name,
             services=[
                 # _UART_UUID,
-                _ENV_SENSE_UUID,
+                _CURRENT_TIME_UUID,
                 # _PROX_SENSE_UUID,
             ],
-            appearance=_ADV_APPEARANCE_GENERIC_COMPUTER
         )
         self._advertise()
 
@@ -131,18 +125,24 @@ class BLE_SERVER:
         elif event == _IRQ_GATTS_WRITE:
             print("_IRQ_GATTS_WRITE")
             conn_handle, value_handle = data
-            if conn_handle in self._connections and value_handle == self._rx_handle:
-                self._rx_buffer += self._ble.gatts_read(self._rx_handle)
-                rx = self.read().decode('UTF-8').strip()
-                print("rx: ", rx)
-                if rx == "scan":
-                    print("starting scan")
-                    self._ble.gap_scan()
-                elif rx == "stop":
-                    print("stopping scan")
-                    self._ble.gap_scan(None)
-                elif rx == "files":
-                    print("files")
+            if conn_handle in self._connections:
+                if value_handle == self._rx_handle:
+                    print("  UART write")
+                    self._rx_buffer += self._ble.gatts_read(self._rx_handle)
+                    rx = self.read().decode('UTF-8').strip()
+                    print("rx: ", rx)
+                    if rx == "scan":
+                        print("starting scan")
+                        self._ble.gap_scan()
+                    elif rx == "stop":
+                        print("stopping scan")
+                        self._ble.gap_scan(None)
+                    elif rx == "files":
+                        print("files")
+                elif value_handle == self._date_time_handle:
+                    # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
+                    time_in = self._ble.gatts_read(self._date_time_handle)
+                    self.set_time(time_in)
 
 
 
@@ -161,8 +161,7 @@ class BLE_SERVER:
             print("_IRQ_SCAN_RESULT")
             addr_type, addr, adv_type, rssi, adv_data = data
             positive_rssi = 127 + rssi
-            # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
-            now = nowBytes()
+            now = nowBytes() # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
             print('positive_rssi:', positive_rssi, '   now:', now)
             self._ble.gatts_write(self._prox_handle, struct.pack(
             "<h", positive_rssi))
@@ -195,17 +194,21 @@ class BLE_SERVER:
             self._ble.gap_disconnect(conn_handle)
         self._connections.clear()
 
-    def set_temperature(self, temp_deg_c, notify=False, indicate=False):
-        # 0x2A6E data is sint16 in degrees Celsius with a resolution of 0.01 degrees Celsius.
-        # Write the local value, ready for a central to read.
-        self._ble.gatts_write(self._temp_handle, struct.pack(
-            "<h", int(temp_deg_c * 100)))
-        if notify or indicate:
+    def set_time(self, date_time, notify=True):
+        """date_time is input as bytes string"""
+        # 0x2A08 date_time is stored as a bytes string uint16 uint8 uint8 uint8 uint8 uint8
+        if not date_time:
+            print("Getting date_time:",date_time)
+            now = nowBytes()
+            self._ble.gatts_write(self._date_time_handle, now)
+        else:
+            print("Setting date_time:",date_time)
+            set_time_ble(date_time)
+            self._ble.gatts_write(self._date_time_handle, date_time)
+        if notify:
             for conn_handle in self._connections:
                 if notify:
-                    self._ble.gatts_notify(conn_handle, self._temp_handle)
-                if indicate:
-                    self._ble.gatts_indicate(conn_handle, self._temp_handle)
+                    self._ble.gatts_notify(conn_handle, self._date_time_handle)
 
     def _advertise(self, interval_us=500000):
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
@@ -226,9 +229,6 @@ def demo():
     from my_time import nowStringExtended
     import random
 
-    t = 25
-    i = 0
-
     try:
         ble = bluetooth.BLE()
         my_device = BLE_SERVER(ble)
@@ -246,13 +246,7 @@ def demo():
         while True:
             # Notify the time
             my_device.write(nowStringExtended() + "\n")
-
-            # Write every second, notify every 10 seconds.
-            i = (i + 1) % 10
-            my_device.set_temperature(t, notify=i == 0, indicate=False)
-            # Random walk the temperature.
-            t += random.uniform(-0.5, 0.5)
-
+            my_device.set_time((2020, 1, 2, 3, 4, 5), notify=True)
             sleep(1)
     except KeyboardInterrupt:
         ble.gap_scan(None)

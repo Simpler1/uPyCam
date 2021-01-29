@@ -50,11 +50,39 @@ def set_time_secs(secs):
 
 
 def set_time_tuple(input_tuple):
-    """input_tuple: [Y, M, D, dow, h, m, s, us]"""
+    """input_tuple: [Y, M, D, h, m, s]"""
+    import machine
+    import utime
+    time_in = list(input_tuple)
+    time_in.insert(3, 0)
+    time_in.append(0)
+    time_in = tuple(time_in)
+    print("time_in:", time_in)
     # out_time = utime.mktime(input_tuple)            # Doesn't work
     # out_time = machine.RTC().init(input_tuple)      # works
-    out_time = machine.RTC().datetime(input_tuple)  # works
+    out_time = machine.RTC().datetime(time_in)  # works
+    # print("utime.gmtime is now:          ", utime.gmtime())
+    # print("machine.RTC().datetime is now:", machine.RTC().datetime())
     print("---------------------")
+    return out_time
+
+
+def set_time_ble(byte_string):
+    """byte_string: b'\xe1\x07\x03\x04\x05\x06\x07'"""
+    import machine
+    import utime
+    time_in = struct.unpack("<hbbbbb", byte_string)
+    time_in = list(time_in)
+    time_in.insert(3, 0)
+    time_in.append(0)
+    time_in = tuple(time_in)
+    # print("time_in:", time_in)
+    # out_time = utime.mktime(input_tuple)            # Doesn't work
+    # out_time = machine.RTC().init(input_tuple)      # works
+    out_time = machine.RTC().datetime(time_in)  # works
+    # print("utime.gmtime is now:          ", utime.gmtime(), "Y M D h m s wd yd")
+    # print("machine.RTC().datetime is now:", machine.RTC().datetime(), "Y M D wd h m s us")
+    print("********************")
     return out_time
 
 
@@ -126,16 +154,16 @@ def demo():
     Y = 2000
     M = 1
     D = 1
-    dow = 0  # Day of week: Ignored on input
+    # dow = 0  # Day of week: Ignored on input
     h = 11
     m = 12
     s = 13
-    us = 123456  # Microseconds: Generally irrelevant
+    # us = 123456  # Microseconds: Generally irrelevant
 
     print_all()
 
-    print("Setting to [", Y, M, D, dow, h, m, s, us, "]")
-    set_time_tuple([Y, M, D, dow, h, m, s, us])
+    print("Setting to [", Y, M, D, h, m, s, "]")
+    set_time_tuple([Y, M, D, h, m, s])
 
     # print("Setting to 0")
     # set_time_secs(0)
