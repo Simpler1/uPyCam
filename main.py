@@ -67,15 +67,18 @@ try:
 except Exception as e:
     print("BLE Error:", e)
 
+tz = -5
 error_counter = 0
 loop = True
 while loop:
     try:
         now_ut = utime.gmtime()
-        sunset_ut = get_sunrise_sunset(now_ut[0], now_ut[1], now_ut[2], False)
-        sunrise_ut = get_sunrise_sunset(now_ut[0], now_ut[1], now_ut[2]+1)
-        sleep_time_s = utime.mktime((now_ut[0], now_ut[1], now_ut[2]+1, sunrise_ut[0], sunrise_ut[1], 0, 0, 0)) - utime.mktime(now_ut)
-        if utime.mktime(now_ut) > utime.mktime((now_ut[0], now_ut[1], now_ut[2], sunset_ut[0], sunset_ut[1], 0, 0, 0)):
+        # Need the local time to know what day it is (which changes with the timezone)
+        now_lt = utime.gmtime(utime.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
+        ss_lt = get_sunrise_sunset(now_lt[0], now_lt[1], now_lt[2], False, tz)
+        sr_lt = get_sunrise_sunset(now_lt[0], now_lt[1], now_lt[2]+1, True, tz)
+        sleep_time_s = utime.mktime(sr_lt + (0, 0)) - utime.mktime(now_lt)
+        if utime.mktime(now_lt) > utime.mktime(ss_lt + (0, 0)):
             machine.lightsleep(sleep_time_s * 1000)
 
         # prepare for photo

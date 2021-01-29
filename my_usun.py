@@ -119,7 +119,7 @@ def get_sunrise_sunset( year, month, day, is_rise=True,
   minutes = int(( local_time - hours ) * 60)
   # time = "{:>2}".format(hours) + ":" + "{:>2}".format(minutes)
   # time = time.replace(" ", "0")
-  return (hours, minutes)
+  return (year, month, day, hours, minutes, 0)
 
 
 # Test 1 (From original document)
@@ -135,7 +135,7 @@ def demo1():
   is_rise = True
 
   print("Local Sunrise at", get_sunrise_sunset(y, m, d, is_rise, tz_offset, dst, lat_d, lon_d, zenith))
-  print("Should be:       (5, 27)")
+  print("Should be:       (1978, 6, 25, 5, 27, 0)")
 
 
 # Test2 (From original document)
@@ -151,7 +151,7 @@ def demo2():
   is_rise = False
 
   print("Local Sunset at", get_sunrise_sunset(y, m, d, _rise, tz_offset, dst, islat_d, lon_d, zenith))
-  print("Should be:      (18, 51)")
+  print("Should be:      (1978, 10, 1, 18, 51, 0)")
 
 
 # Test 3 (My local test)
@@ -166,14 +166,13 @@ def demo3():
   d = 19
 
   print("Local Sunrise at", get_sunrise_sunset(y, m, d, True, tz_offset, dst, lat_d, lon_d, zenith))
-  print("Should be        (7, 53)\n")
+  print("Should be        (2021, 1, 19, 7, 53, 0)\n")
   print("Local Sunset at", get_sunrise_sunset(y, m, d, False, tz_offset, dst, lat_d, lon_d, zenith))
-  print("Should be       (17, 43)\n")
+  print("Should be       (2021, 1, 19, 17, 43, 0)\n")
   from utime import gmtime
   now = gmtime()
-  print("Today is", now[0:3])
   print("Sunrise today at", get_sunrise_sunset(now[0], now[1], now[2], True, -5, False))
-  print("Sunset today at", get_sunrise_sunset(now[0], now[1], now[2], False, -5, False))
+  print("Sunset today at ", get_sunrise_sunset(now[0], now[1], now[2], False, -5, False))
 
 if __name__ == "__main__":
   demo3()
