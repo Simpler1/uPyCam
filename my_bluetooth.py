@@ -1,5 +1,6 @@
 import bluetooth
 import struct
+import uos
 from ble_advertising import advertising_payload
 from micropython import const
 from my_time import nowBytes, set_time_ble
@@ -28,50 +29,66 @@ _UART_TX = (
 )
 _UART_SERVICE = (
     _UART_UUID,
-    (_UART_TX, _UART_RX),
+    (_UART_TX, _UART_RX,),
 )
 
 
 # org.bluetooth.service.current_time
 _CURRENT_TIME_UUID = bluetooth.UUID(0x1805)
-# org.bluetooth.characteristic.current_time
 _CURRENT_TIME_CHAR = (
+    # org.bluetooth.characteristic.current_time
     bluetooth.UUID(0x2A2B),
     bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
-# org.bluetooth.characteristic.date_time
 _DATE_TIME_CHAR = (
+    # org.bluetooth.characteristic.date_time
     bluetooth.UUID(0x2A08),
     bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
 _CURRENT_TIME_SERVICE = (
     _CURRENT_TIME_UUID,
-    (_CURRENT_TIME_CHAR, _DATE_TIME_CHAR),
+    (_CURRENT_TIME_CHAR, _DATE_TIME_CHAR,),
 )
 
 
-_PROX_SENSE_UUID = bluetooth.UUID("3E099910-293F-11E4-93BD-AFD0FE6D1DFD")
+_FILES_UUID = bluetooth.UUID("7a890001-e96d-4842-8b3d-69ce27889cd6")
+_FILE_COUNT_CHAR = (
+    bluetooth.UUID("7a890002-e96d-4842-8b3d-69ce27889cd6"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    (
+        (
+          # org.bluetooth.descriptor.gatt.characteristic_user_description
+          bluetooth.UUID(0x2901),
+          bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+        ),
+    )
+)
+_FILES_SERVICE = (
+    _FILES_UUID,
+    (_FILE_COUNT_CHAR,),
+)
+
+
+_PROX_SENSE_UUID = bluetooth.UUID("3E099911-293F-11E4-93BD-AFD0FE6D1DFD")
 _PROX_CHAR = (
-    bluetooth.UUID("3E099911-293F-11E4-93BDA-FD0FE6D1DFD"),
+    bluetooth.UUID("3E099912-293F-11E4-93BD-AFD0FE6D1DFD"),
     bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
     (
-      (
-        bluetooth.UUID(0x2901),
-        bluetooth.FLAG_READ | bluetooth.FLAG_WRITE
-      ),
+        (
+          # org.bluetooth.descriptor.gatt.characteristic_user_description
+          bluetooth.UUID(0x2901),
+          bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+        ),
     )
 )
 _PROX_TIME_CHAR = (
+    # org.bluetooth.characteristic.date_time
     bluetooth.UUID(0x2A08),
-    # 0x2A08  format is YYYYMMDDhhmmss as a hex byte string
-    #    b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
-    # 0x2A2B  CurrentTime  =>  ExactTime256, Timezone, DST, Method of update  ??
-    # https://speakerdeck.com/ephread/bluetooth-low-energy?slide=21
     bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY,
 )
 _PROX_SERVICE = (
     _PROX_SENSE_UUID,
-    (_PROX_CHAR, _PROX_TIME_CHAR),
+    (_PROX_CHAR, _PROX_TIME_CHAR,),
 )
 
 
@@ -83,15 +100,16 @@ class BLE_SERVER:
         (
             (self._tx_handle, self._rx_handle),
             (self._current_time_handle, self._date_time_handle),
+            (self._file_count_handle, self._file_desc_handle),
             (self._prox_handle, self._prox_desc_handle, self._prox_time_handle),
         ) = self._ble.gatts_register_services(
             (
               _UART_SERVICE,
               _CURRENT_TIME_SERVICE,
+              _FILES_SERVICE,
               _PROX_SERVICE,
             )
         )
-        self._ble.gatts_write(self._prox_desc_handle, "RSSI (0-127)")
         
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, 100, True)
@@ -102,9 +120,13 @@ class BLE_SERVER:
             services=[
                 # _UART_UUID,
                 _CURRENT_TIME_UUID,
+                # _FILES_UUID,
                 # _PROX_SENSE_UUID,
             ],
         )
+
+        self._ble.gatts_write(self._prox_desc_handle, "RSSI (0-127)") # TODO: This doesn't work
+
         self._advertise()
 
     def _irq(self, event, data):
@@ -130,7 +152,7 @@ class BLE_SERVER:
                 if value_handle == self._rx_handle:
                     print("  UART write")
                     self._rx_buffer += self._ble.gatts_read(self._rx_handle)
-                    rx = self.read().decode('UTF-8').strip()
+                    rx = self.read(self._rx_buffer).decode('UTF-8').strip()
                     print("rx: ", rx)
                     if rx == "scan":
                         print("starting scan")
@@ -144,6 +166,11 @@ class BLE_SERVER:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
                     time_in = self._ble.gatts_read(self._date_time_handle)
                     self.set_time(time_in)
+                elif value_handle == self._file_count_handle:
+                    # Convert from int to a byte literal in order to write to a ble value
+                    packed = struct.pack("<h",len(uos.listdir('sd'))-1)
+                    self._ble.gatts_write(self._file_count_handle, packed)
+                    self._ble.gatts_notify(conn_handle, self._file_count_handle)
 
 
 
@@ -179,11 +206,11 @@ class BLE_SERVER:
     def any(self):
         return len(self._rx_buffer)
 
-    def read(self, sz=None):
+    def read(self, buffer, sz=None):
         if not sz:
-            sz = len(self._rx_buffer)
-        result = self._rx_buffer[0:sz]
-        self._rx_buffer = self._rx_buffer[sz:]
+            sz = len(buffer)
+        result = buffer[0:sz]
+        buffer = buffer[sz:]
         return result
 
     def write(self, data):
@@ -212,6 +239,7 @@ class BLE_SERVER:
                     self._ble.gatts_notify(conn_handle, self._date_time_handle)
 
     def _advertise(self, interval_us=500000):
+        print("Advertising...")
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
     def pretty_mac(self, hex_mac):             # hex_mac = b'<a\x05\x15\x9d\xfe'
