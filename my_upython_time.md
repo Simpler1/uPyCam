@@ -10,8 +10,34 @@ When these files are viewed on a machine that supports timezone, they will be di
 a create/modify time in the current timezone.
 
 NPT_DELTA represents the number of seconds in 100 years (from 01-Jan-1900 to 01-Jan-2000)
-Changing this value changes the GMT time on the board with messes up the times that the files were created/modified.  
+Changing this value changes the GMT time on the board which messes up the times that the files were created/modified.  
 **Conclusion:  Don't Change the NTP_DELTA value.**
+
+
+MicroPython Time Commands
+=========================
+set from NTP:  (must be connected to wifi)
+  ntptime.settime()
+
+set: 
+  machine.RTC().datetime((Y, M, D, 0, h, m, s, 0)) =>
+    Nothing returned
+get: 
+  machine.RTC().datetime() => 
+    (Y, M, D, wd, h, m, s, us) 
+      (wd: weekday is 0-6 for Mon-Sun) (us: microseconds)
+
+convert:
+  utime.gmtime(s) => 
+    (Y, M, D, h, m, s, wd, yd)  
+      (wd: weekday is 0-6 for Mon-Sun)
+      (yd: year day is 1-366)
+  utime.localtime(s) => 
+    same as gmtime() for the ESP32-CAM because there is no timezone or dst info
+
+convert:
+  utime.mktime((Y, M, D, h, m, s, 0, 0)) => 
+    Seconds since 01-Jan-2000
 
 
 exiftool

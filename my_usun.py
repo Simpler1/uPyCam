@@ -175,5 +175,67 @@ def demo3():
   print("Sunrise today at", get_sunrise_sunset(now[0], now[1], now[2], True, -5, False))
   print("Sunset today at ", get_sunrise_sunset(now[0], now[1], now[2], False, -5, False))
 
+
+# Test 4 (Full year test)
+def demo4():
+  import utime
+  import json
+  zenith = 91
+  lat_d = 38.95
+  lon_d = -84.35
+  tz_offset = -5
+  dst = False
+  y = 2021
+  m = 1
+  d = 1
+  sec = utime.mktime((y, m, d, 0, 0, 0, 0, 0))
+  out = []
+
+  while y == 2021:
+    r = get_sunrise_sunset(y, m, d, True, tz_offset, dst, lat_d, lon_d, zenith)
+    s = get_sunrise_sunset(y, m, d, False, tz_offset, dst, lat_d, lon_d, zenith)
+    ss = {
+      "Off At": "{:04}-{:02}-{:02} {:02}:{:02}{}".format(s[0], s[1], s[2], s[3] if s[3] < 12 else s[3] - 12, s[4], "pm" if s[3] > 12 else "am"),
+      "On At": "{:04}-{:02}-{:02} {:02}:{:02}{}".format(r[0], r[1], r[2], r[3] if r[3] < 12 else r[3] - 12, r[4], "pm" if r[3] > 12 else "am"),
+    }
+    key = "{:04}-{:01}-{:01}".format(y, m, d)
+    out.append({key: ss})
+
+    sec += 86400
+    y, m, d, _, _, _, _, _ = utime.localtime(sec)
+  
+  print(json.dumps(out))
+
+
+# Test 5 (Output list for year test)
+def demo5():
+  import utime
+  import json
+  zenith = 91
+  lat_d = 38.95
+  lon_d = -84.35
+  tz_offset = -5
+  dst = False
+  y = 2021
+  m = 1
+  d = 1
+  sec = utime.mktime((y, m, d, 0, 0, 0, 0, 0))
+  out = []
+
+  while y == 2021:
+    r = get_sunrise_sunset(y, m, d, True, tz_offset, dst, lat_d, lon_d, zenith)
+    s = get_sunrise_sunset(y, m, d, False, tz_offset, dst, lat_d, lon_d, zenith)
+    ss = [
+      (r[3], r[4]),
+      (s[3], s[4])
+    ]
+    out.append(ss)
+
+    sec += 86400
+    y, m, d, _, _, _, _, _ = utime.localtime(sec)
+  
+  print(json.dumps(out))
+  
+
 if __name__ == "__main__":
-  demo3()
+  demo5()
