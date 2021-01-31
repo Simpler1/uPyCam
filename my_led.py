@@ -11,7 +11,8 @@ flash = Pin(4, Pin.OUT)  # GPIO 4 is the ESP32-CAM on board flash LED
 # The actual led is on when the value is 0 and off when the value is 1
 # These methods swap that behavior
 
-def setLed(setValue):  # True=on, False=off
+def setLed(setValue):
+    """True=on, False=off"""
     actualValue = 0 if setValue == True else 1
     led.value(actualValue)
 
@@ -22,7 +23,8 @@ def getLed():
     return getValue
 
 
-def setFlash(setValue):  # True=on, False=off
+def setFlash(setValue):
+    """True=on, False=off"""
     actualValue = setValue
     flash.value(actualValue)
 

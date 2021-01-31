@@ -6,6 +6,7 @@ from micropython import const
 from my_time import nowBytes, set_time_ble
 import utime
 import my_files
+from my_led import setLed
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -136,13 +137,14 @@ class BLE_SERVER:
             print("_IRQ_CENTRAL_CONNECT")
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
-
+            setLed(1)
         elif event == _IRQ_CENTRAL_DISCONNECT:
             print("_IRQ_CENTRAL_DISCONNECT")
             conn_handle, _, _ = data
             self._ble.gap_scan(None)
             if conn_handle in self._connections:
                 self._connections.remove(conn_handle)
+            setLed(0)
             # Start advertising again to allow a new connection.
             self._advertise()
         elif event == _IRQ_GATTS_WRITE:
@@ -164,10 +166,12 @@ class BLE_SERVER:
                         print("files")
                 elif value_handle == self._date_time_handle:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
+                    print("Write time")
                     time_in = self._ble.gatts_read(self._date_time_handle)
                     self.set_time(time_in)
                 elif value_handle == self._file_count_handle:
                     # Convert from int to a byte literal in order to write to a ble value
+                    print("Write file count")
                     packed = struct.pack("<h",len(uos.listdir('sd'))-1)
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
@@ -241,6 +245,9 @@ class BLE_SERVER:
     def _advertise(self, interval_us=500000):
         print("Advertising...")
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
+
+    def is_connected(self):
+        return True if len(self._connections) > 0 else False        
 
     def pretty_mac(self, hex_mac):             # hex_mac = b'<a\x05\x15\x9d\xfe'
         s = []

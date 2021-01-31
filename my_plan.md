@@ -8,19 +8,15 @@ Battery
 Power switch (to swap SD Card)
 Build / 3D Print a case
 BLE
-  Time Service
-    Send date/time from mobile
-  File Service
-    How many photos on SD card?
-  Voltage Service
-    Battery voltage
   Mobile app to connect
     Check number of photos
     Check voltage
     Download photos ??
     View old time / updated time / difference
-Solar Panel
+  Voltage Service
+    Battery voltage
 Voltage Meter
+Solar Panel
 Motion Sensor
 Light Sensor
   Wake/Sleep based on light sensor value
@@ -38,14 +34,15 @@ Boot
       Cycle red LED 1 time.
   Enable BLE (Bluetooth Low Energy)
     If connected
-      Blink LED
+      LED on
       Send (notify?)
         Old date/time
         Number of photos
         Battery voltage
       Receive (write?)
         Updated date/time from mobile
-  If no BLE connection for 1 minute, disable BLE
+    If disconnected
+      LED off
 
 
 Main
@@ -68,7 +65,7 @@ ESP32-CAM
   GAP Role:  Peripheral
   GATT:  Server
     Service:  "Current Time Service"  (Profile Specification: CTS)
-      Characteristic:  Current Time
+      Characteristic:  Date Time
         Descriptor:  
           Name:
           Requirement:  **Mandatory**
@@ -103,7 +100,7 @@ ESP32-CAM
           Format:  uint8  (Unsigned 8 bits)
           Characteristic Reference: 
 
-    Service:  
+    Service:  "File Service" (Custom)
       Characteristic:  Number of image files
         Descriptor:  
     Service:  
