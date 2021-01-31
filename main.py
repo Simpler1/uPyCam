@@ -81,9 +81,12 @@ while loop:
             ss_lt = sunrise_sunset[doy][1]
             sr_lt = sunrise_sunset[doy+1][0]
             print("\nSunset:", ss_lt, " Sunrise:", sr_lt, "\n")
-        sleep_time_s = utime.mktime((2021, 1, doy+1, sr_lt[0], sr_lt[1], 0, 0, 0)) - utime.mktime(now_lt)
-        print("Now:   ", now_lt, " Sleep time:", utime.localtime(sleep_time_s)[3:6])
-        if utime.mktime(now_lt) > utime.mktime((2021, 1, doy, ss_lt[0], ss_lt[1], 0, 0, 0)):
+        sr_day = doy + 1 if now_lt[3] > 12 else doy
+        sleep_time_s = utime.mktime(
+            (2021, 1, sr_day, sr_lt[0], sr_lt[1], 0, 0, 0)) - utime.mktime(now_lt)
+        if utime.mktime((2021, 1, doy, ss_lt[0], ss_lt[1], 0, 0, 0)) < utime.mktime(now_lt) or \
+           utime.mktime(now_lt) < utime.mktime((2021, 1, doy, sr_lt[0], sr_lt[1], 0, 0, 0)):
+            print("Sleeping for", utime.localtime(sleep_time_s)[3:6])
             machine.lightsleep(sleep_time_s * 1000)
 
         # prepare for photo
@@ -107,7 +110,8 @@ while loop:
 
         print("Picture", filename, "taken at:", nowStringExtended())
         # sleep
-        utime.sleep_ms(app_config['sleep_ms'] - app_config['approx_proc_time_ms'])
+        utime.sleep_ms(app_config['sleep_ms'] -
+                       app_config['approx_proc_time_ms'])
         # machine.lightsleep(app_config['sleep_ms'] - app_config['approx_proc_time_ms'])
         # machine.deepsleep(app_config['sleep_ms'] - app_config['approx_proc_time_ms'] -
         #                   app_config['deepSleepBootTime_ms'])
