@@ -10,9 +10,12 @@
 # time and utime classes will not set the time.
 
 import struct
+import machine
+import config
+import ntptime
 
 def nowStringExtended():
-    """Returns the current GMT system date in extended ISO8601 format: YY-MM-DDThh:mm:ssZ """
+    """Returns the current GMT system date in extended ISO8601 format: YYYY-MM-DDThh:mm:ssZ """
     import machine
     rtc = machine.RTC()
     year, month, day, dayofweek, hour, minute, second, us = rtc.datetime()
@@ -22,7 +25,7 @@ def nowStringExtended():
 
 
 def nowString():
-    """Returns the current GMT system date in basic ISO8601 format: YYMMDDThhmmssZ"""
+    """Returns the current GMT system date in basic ISO8601 format: YYYYMMDDThhmmssZ"""
     import machine
     rtc = machine.RTC()
     timestamp = rtc.datetime()
@@ -149,6 +152,32 @@ def print_all():
 # cos(w0) = -tan(theta) x tan(delta)
 
 
+def deep_sleep_start(seconds):
+    clock_correction_24hr_s = 0
+    try:
+        ntptime.settime()
+    except Exception as e:
+        print("NTP Time Error ocurred on sleep: " + str(e))
+    t0 = str(machine.RTC().datetime())
+    line = t0 + "\t" + str(seconds)
+    # "with open()" handles the close() automatically
+    with open('sleep.txt', 'w') as f:
+        f.write(line)
+    print("machine.deepsleep(ms): starting to deep sleep for", seconds, "seconds at", nowStringExtended(), "\n")
+    machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
+
+
+def deep_sleep_end():
+    with open('sleep.txt', 'r') as f:
+        line = f.read()
+    parts = line.split("\t")
+    time = eval(parts[0])
+    seconds = int(parts[1])
+    print("Time was   ", nowStringExtended())
+    machine.RTC().datetime((time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"],) + (0,)))
+    print("Time is now", nowStringExtended())
+
+
 
 def demo():
     Y = 2000
@@ -173,5 +202,9 @@ def demo():
     print_all()
 
 
+def demo1():
+  deep_sleep_start(3600)
+
+
 if __name__ == "__main__":
-    demo()
+    demo1()

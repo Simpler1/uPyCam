@@ -14,7 +14,6 @@
 
 app_config = {
     'sleep_ms': 60000,
-    'approx_proc_time_ms': 2600,
     'deepSleepBootTime_ms': 7800,
     'flash': False,
     'max-error': 10,

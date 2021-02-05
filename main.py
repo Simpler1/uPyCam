@@ -20,7 +20,7 @@ from ftp import ftpserver
 from config import *
 import bluetooth
 import my_files
-from my_time import nowStringExtended
+from my_time import nowStringExtended, deep_sleep_start
 from my_bluetooth import BLE_SERVER
 from my_usun import get_sunrise_sunset
 
@@ -67,6 +67,8 @@ try:
 except Exception as e:
     print("BLE Error:", e)
 
+proc_time_ms = 0
+this_time = utime.ticks_ms() - app_config['sleep_ms']
 tz = -5
 doy = 0
 error_counter = 0
@@ -87,7 +89,7 @@ while loop:
         if utime.mktime((2021, 1, doy, ss_lt[0], ss_lt[1], 0, 0, 0)) < utime.mktime(now_lt) or \
            utime.mktime(now_lt) < utime.mktime((2021, 1, doy, sr_lt[0], sr_lt[1], 0, 0, 0)):
             print("Sleeping for", utime.localtime(sleep_time_s)[3:6])
-            machine.lightsleep(sleep_time_s * 1000)
+            deep_sleep_start(sleep_time_s)
 
         # prepare for photo
         if app_config['flash']:
@@ -109,12 +111,13 @@ while loop:
             c.publish(mqtt_config['topic'], buf)
 
         print("Picture", filename, "taken at:", nowStringExtended())
+
         # sleep
-        utime.sleep_ms(app_config['sleep_ms'] -
-                       app_config['approx_proc_time_ms'])
-        # machine.lightsleep(app_config['sleep_ms'] - app_config['approx_proc_time_ms'])
-        # machine.deepsleep(app_config['sleep_ms'] - app_config['approx_proc_time_ms'] -
-        #                   app_config['deepSleepBootTime_ms'])
+        last_time = this_time
+        this_time = utime.ticks_ms()
+        last_proc_time_ms = proc_time_ms
+        proc_time_ms = this_time - last_time - app_config['sleep_ms'] + last_proc_time_ms
+        utime.sleep_ms(app_config['sleep_ms'] - proc_time_ms)
 
     except KeyboardInterrupt:
         print("debugging stopped")
