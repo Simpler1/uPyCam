@@ -89,13 +89,21 @@ def set_time_ble(byte_string):
     return out_time
 
 
-def set_time_ntp():
+def set_time_ntp(error_count=0):
     """Set system time using network time protocol"""
+    import utime
+    import ntptime
     try:
-        import ntptime
-        print("ntptime.settime(): ", ntptime.settime(), "------------------")
+        ntptime.settime()
+        print("ntptime.settime(): ", nowStringExtended(), "------------------")
     except Exception as e:
-        print("Couldn't set ntp time: " + str(e))
+        if error_count < 5:
+          print(error_count, "seconds")
+          error_count += 1
+          utime.sleep(1)
+          set_time_ntp(error_count)
+        else:
+          print("Couldn't set ntp time after", error_count, "seconds\n", str(e))
 
 
 def print_datetime():
@@ -153,18 +161,21 @@ def print_all():
 
 
 def deep_sleep_start(seconds):
+    import utime
+    print("Sleeping for", utime.gmtime(seconds)[3:6], "at", utime.gmtime())
     clock_correction_24hr_s = 0
     try:
-        ntptime.settime()
+        set_time_ntp()
     except Exception as e:
         print("NTP Time Error ocurred on sleep: " + str(e))
-    t0 = str(machine.RTC().datetime())
-    line = t0 + "\t" + str(seconds)
+    t0 = machine.RTC().datetime()
+    line = str(t0) + "\t" + str(seconds)
     # "with open()" handles the close() automatically
     with open('sleep.txt', 'w') as f:
         f.write(line)
-    print("machine.deepsleep(ms): starting to deep sleep for", seconds, "seconds at", nowStringExtended(), "\n")
+    print("machine.deepsleep(ms): starting to deep sleep for", seconds, "seconds at", nowStringExtended(), "until", utime.gmtime(utime.time()+seconds), "\n")
     machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
+    # deep_sleep_end()  # TODO: This is temporary while testing lightsleep
 
 
 def deep_sleep_end():
@@ -173,10 +184,10 @@ def deep_sleep_end():
     parts = line.split("\t")
     time = eval(parts[0])
     seconds = int(parts[1])
-    print("Time was   ", nowStringExtended())
+    print("At wake            ", nowStringExtended())
     machine.RTC().datetime((time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"],) + (0,)))
-    print("Time is now", nowStringExtended())
-
+    print("Manually set to    ", nowStringExtended())
+    # set_time_ntp() # TODO: Temporary while testing lightsleep
 
 
 def demo():
@@ -203,7 +214,7 @@ def demo():
 
 
 def demo1():
-  deep_sleep_start(3600)
+    deep_sleep_start(5*60*60)
 
 
 if __name__ == "__main__":

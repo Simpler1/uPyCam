@@ -17,6 +17,9 @@ _IRQ_SCAN_DONE = const(6)
 _IRQ_GATTS_INDICATE_DONE = const(20)
 _IRQ_MTU_EXCHANGED = const(21)
 
+_FLAG_DESC_READ = const(1)
+_FLAG_DESC_WRITE = const(2)
+
 # https://www.bluetooth.com/specifications/assigned-numbers/
 # https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
 _UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -60,7 +63,7 @@ _FILE_COUNT_CHAR = (
         (
           # org.bluetooth.descriptor.gatt.characteristic_user_description
           bluetooth.UUID(0x2901),
-          bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+          _FLAG_DESC_READ | _FLAG_DESC_WRITE,
         ),
     )
 )
@@ -78,7 +81,7 @@ _PROX_CHAR = (
         (
           # org.bluetooth.descriptor.gatt.characteristic_user_description
           bluetooth.UUID(0x2901),
-          bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+          _FLAG_DESC_READ | _FLAG_DESC_WRITE,
         ),
     )
 )
@@ -126,7 +129,8 @@ class BLE_SERVER:
             ],
         )
 
-        self._ble.gatts_write(self._prox_desc_handle, "RSSI (0-127)") # TODO: This doesn't work
+        self._ble.gatts_write(self._file_desc_handle, "Number of Files")
+        self._ble.gatts_write(self._prox_desc_handle, "Received Signal Strength Indicator (0-127)")
 
         self._advertise()
 

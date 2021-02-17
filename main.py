@@ -76,20 +76,20 @@ loop = True
 while loop:
     try:
         now_ut = utime.gmtime()
-        # Need the local time to know what day it is (which changes with the timezone)
-        now_lt = utime.gmtime(utime.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
-        if doy != now_lt[7]:
-            doy = now_lt[7]
-            ss_lt = sunrise_sunset[doy][1]
-            sr_lt = sunrise_sunset[doy+1][0]
-            print("\nSunset:", ss_lt, " Sunrise:", sr_lt, "\n")
-        sr_day = doy + 1 if now_lt[3] > 12 else doy
-        sleep_time_s = utime.mktime(
-            (2021, 1, sr_day, sr_lt[0], sr_lt[1], 0, 0, 0)) - utime.mktime(now_lt)
-        if utime.mktime((2021, 1, doy, ss_lt[0], ss_lt[1], 0, 0, 0)) < utime.mktime(now_lt) or \
-           utime.mktime(now_lt) < utime.mktime((2021, 1, doy, sr_lt[0], sr_lt[1], 0, 0, 0)):
-            print("Sleeping for", utime.localtime(sleep_time_s)[3:6])
-            deep_sleep_start(sleep_time_s)
+        if now_ut[0] > 2000:
+            # Need the local time to know what day it is (which changes with the timezone)
+            now_lt = utime.gmtime(utime.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
+            if doy != now_lt[7]:
+                doy = now_lt[7]
+                ss_lt = sunrise_sunset[doy][1]
+                sr_lt = sunrise_sunset[doy+1][0]
+                print("\nSunset:", ss_lt, " Sunrise:", sr_lt, "\n")
+            sr_day = doy + 1 if now_lt[3] > 12 else doy
+            sleep_time_s = utime.mktime(
+                (2021, 1, sr_day, sr_lt[0], sr_lt[1], 0, 0, 0)) - utime.mktime(now_lt)
+            if utime.mktime((2021, 1, doy, ss_lt[0], ss_lt[1], 0, 0, 0)) < utime.mktime(now_lt) or \
+              utime.mktime(now_lt) < utime.mktime((2021, 1, doy, sr_lt[0], sr_lt[1], 0, 0, 0)):
+                deep_sleep_start(sleep_time_s)
 
         # prepare for photo
         if app_config['flash']:
