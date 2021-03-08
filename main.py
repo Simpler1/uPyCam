@@ -89,9 +89,8 @@ while loop:
             if utime.mktime((2021, 1, doy, off_at[0], off_at[1], 0, 0, 0)) < utime.mktime(now_lt) or \
               utime.mktime(now_lt) < utime.mktime((2021, 1, doy, on_at[0], on_at[1], 0, 0, 0)):
               sr_day = doy + 1 if now_lt[3] > 12 else doy
-              sleep_time_s = utime.mktime(
-                  (2021, 1, sr_day, on_at[0], on_at[1], 0, 0, 0)) - utime.mktime(now_lt)
-                deep_sleep_start(sleep_time_s)
+              sleep_time_s = utime.mktime((2021, 1, sr_day, on_at[0], on_at[1], 0, 0, 0)) - utime.mktime(now_lt)
+              deep_sleep_start(sleep_time_s)
 
         # prepare for photo
         if app_config['flash']:
