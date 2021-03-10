@@ -84,8 +84,8 @@ while loop:
                 ss_lt = sunrise_sunset[doy][1]
                 sr_lt = sunrise_sunset[doy+1][0]
                 print("\nSunset:", ss_lt, " Sunrise:", sr_lt, "\n")
-            off_at = [ss_lt[0], ss_lt[1] + 30] # 30 minutes after sunset
-            on_at =  [sr_lt[0], sr_lt[1] - 30] # 30 minutes before sunrise
+            off_at = [ss_lt[0], ss_lt[1] + 25] # 25 minutes after sunset
+            on_at =  [sr_lt[0], sr_lt[1] - 25] # 25 minutes before sunrise
             if utime.mktime((2021, 1, doy, off_at[0], off_at[1], 0, 0, 0)) < utime.mktime(now_lt) or \
               utime.mktime(now_lt) < utime.mktime((2021, 1, doy, on_at[0], on_at[1], 0, 0, 0)):
               sr_day = doy + 1 if now_lt[3] > 12 else doy
