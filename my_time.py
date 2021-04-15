@@ -13,6 +13,7 @@ import struct
 import machine
 import config
 import ntptime
+import time
 
 def nowStringExtended():
     """Returns the current GMT system date in extended ISO8601 format: YYYY-MM-DDThh:mm:ssZ """
@@ -46,8 +47,8 @@ def nowBytes():
 
 def set_time_secs(secs):
     """secs: Seconds since 01-Jan-2000 12:00a GMT"""
-    # out_time = utime.localtime(secs)                # Doesn't work
-    out_time = utime.gmtime(secs)                   # Doesn't work
+    # out_time = time.localtime(secs)                # Doesn't work
+    out_time = time.gmtime(secs)                   # Doesn't work
     print("+++++++++++++++++++++")
     return out_time
 
@@ -55,35 +56,35 @@ def set_time_secs(secs):
 def set_time_tuple(input_tuple):
     """input_tuple: [Y, M, D, h, m, s]"""
     import machine
-    import utime
+    import time
     time_in = list(input_tuple)
     time_in.insert(3, 0)
     time_in.append(0)
     time_in = tuple(time_in)
     print("time_in:", time_in)
-    # out_time = utime.mktime(input_tuple)            # Doesn't work
+    # out_time = time.mktime(input_tuple)            # Doesn't work
     # out_time = machine.RTC().init(input_tuple)      # works
     out_time = machine.RTC().datetime(time_in)  # works
-    # print("utime.gmtime is now:          ", utime.gmtime())
+    # print("time.gmtime is now:          ", time.gmtime())
     # print("machine.RTC().datetime is now:", machine.RTC().datetime())
     print("---------------------")
     return out_time
 
 
 def set_time_ble(byte_string):
-    """byte_string: b'\xe1\x07\x03\x04\x05\x06\x07'"""
+    """byte_string: b'\xe1\x07\x03\x04\x05\x06\x07' is 2017-03-04 05:06:07"""
     import machine
-    import utime
+    import time
     time_in = struct.unpack("<hbbbbb", byte_string)
     time_in = list(time_in)
     time_in.insert(3, 0)
     time_in.append(0)
     time_in = tuple(time_in)
     # print("time_in:", time_in)
-    # out_time = utime.mktime(input_tuple)            # Doesn't work
+    # out_time = time.mktime(input_tuple)            # Doesn't work
     # out_time = machine.RTC().init(input_tuple)      # works
     out_time = machine.RTC().datetime(time_in)  # works
-    # print("utime.gmtime is now:          ", utime.gmtime(), "Y M D h m s wd yd")
+    # print("time.gmtime is now:          ", time.gmtime(), "Y M D h m s wd yd")
     # print("machine.RTC().datetime is now:", machine.RTC().datetime(), "Y M D wd h m s us")
     print("********************")
     return out_time
@@ -91,7 +92,7 @@ def set_time_ble(byte_string):
 
 def set_time_ntp(error_count=0):
     """Set system time using network time protocol"""
-    import utime
+    import time
     import ntptime
     try:
         ntptime.settime()
@@ -100,7 +101,7 @@ def set_time_ntp(error_count=0):
         if error_count < 5:
           print(error_count, "seconds")
           error_count += 1
-          utime.sleep(1)
+          time.sleep(1)
           set_time_ntp(error_count)
         else:
           print("Couldn't set ntp time after", error_count, "seconds\n", str(e))
@@ -117,21 +118,21 @@ def print_datetime():
 
 
 def print_localtime():
-    print("utime.localtime():       ", utime.localtime())
+    print("time.localtime():        ", time.localtime())
     print("                              Y  M  D  h  m  s wd yd")
     # weekday is 0-6 for Mon-Sun
     # yearday is 1-366
 
 
 def print_gmtime():
-    print("utime.gmtime():          ", utime.gmtime())
+    print("time.gmtime():           ", time.gmtime())
     print("                              Y  M  D  h  m  s wd yd")
     # weekday is 0-6 for Mon-Sun
     # yearday is 1-366
 
 
 def print_time():
-    print("utime.time():     ", utime.time())
+    print("time.time():      ", time.time())
     print("                   Seconds since 2000-Jan-01 12:00am")
 
 
@@ -146,9 +147,11 @@ def print_ntp_time():
 
 def print_all():
     print()
-    print("nowString():      ", nowString())          # Prints YYMMDDThhmmssZ
+    print("nowString():        ", nowString())          # Prints YYMMDDThhmmssZ
     # Prints YY-MM-DDThh:mm:ssZ
-    print("nowStringExtended:", nowStringExtended())
+    print("nowStringExtended():", nowStringExtended())
+    print("nowBytes():         ", nowBytes())
+    print()
     print_ntp_time()  # Prints seconds
     print_datetime()  # Prints tuple
     # print_localtime() # Prints tuple and is exactly the same as gmtime()
@@ -161,8 +164,8 @@ def print_all():
 
 
 def deep_sleep_start(seconds):
-    import utime
-    print("Sleeping for", utime.gmtime(seconds)[3:6], "at", utime.gmtime())
+    import time
+    print("Sleeping for", time.gmtime(seconds)[3:6], "at", time.gmtime())
     clock_correction_24hr_s = 0
     try:
         set_time_ntp()
@@ -173,7 +176,7 @@ def deep_sleep_start(seconds):
     # "with open()" handles the close() automatically
     with open('sleep.txt', 'w') as f:
         f.write(line)
-    print("machine.deepsleep(ms): starting to deep sleep for", seconds, "seconds at", nowStringExtended(), "until", utime.gmtime(utime.time()+seconds), "\n")
+    print("machine.deepsleep(ms): starting to deep sleep for", seconds, "seconds at", nowStringExtended(), "until", time.gmtime(time.time()+seconds), "\n")
     machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
     # deep_sleep_end()  # TODO: This is temporary while testing lightsleep
 
@@ -218,4 +221,4 @@ def demo1():
 
 
 if __name__ == "__main__":
-    demo1()
+    demo()

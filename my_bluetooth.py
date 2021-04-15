@@ -3,7 +3,7 @@ import struct
 import uos
 from ble_advertising import advertising_payload
 from micropython import const
-from my_time import nowBytes, set_time_ble
+from my_time import nowStringExtended, nowBytes, set_time_ble
 import utime
 import my_files
 from my_led import setLed
@@ -23,17 +23,13 @@ _FLAG_DESC_WRITE = const(2)
 # https://www.bluetooth.com/specifications/assigned-numbers/
 # https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
 _UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-_UART_RX = (
+_UART_RX_CHAR = (
     bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"),
-    bluetooth.FLAG_WRITE,
-)
-_UART_TX = (
-    bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"),
-    bluetooth.FLAG_NOTIFY,
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
 _UART_SERVICE = (
     _UART_UUID,
-    (_UART_TX, _UART_RX,),
+    (_UART_RX_CHAR,),
 )
 
 
@@ -42,7 +38,7 @@ _CURRENT_TIME_UUID = bluetooth.UUID(0x1805)
 _CURRENT_TIME_CHAR = (
     # org.bluetooth.characteristic.current_time
     bluetooth.UUID(0x2A2B),
-    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
 _DATE_TIME_CHAR = (
     # org.bluetooth.characteristic.date_time
@@ -56,16 +52,17 @@ _CURRENT_TIME_SERVICE = (
 
 
 _FILES_UUID = bluetooth.UUID("7a890001-e96d-4842-8b3d-69ce27889cd6")
-_FILE_COUNT_CHAR = (
-    bluetooth.UUID("7a890002-e96d-4842-8b3d-69ce27889cd6"),
-    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+_FILE_COUNT_DESC = (
     (
-        (
-          # org.bluetooth.descriptor.gatt.characteristic_user_description
-          bluetooth.UUID(0x2901),
-          _FLAG_DESC_READ | _FLAG_DESC_WRITE,
-        ),
-    )
+      # org.bluetooth.descriptor.gatt.characteristic_user_description
+      bluetooth.UUID(0x2901),
+      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+    ),
+)
+_FILE_COUNT_CHAR = (
+    bluetooth.UUID("7a890102-e96d-4842-8b3d-69ce27889cd6"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    _FILE_COUNT_DESC,
 )
 _FILES_SERVICE = (
     _FILES_UUID,
@@ -73,45 +70,20 @@ _FILES_SERVICE = (
 )
 
 
-_PROX_SENSE_UUID = bluetooth.UUID("3E099911-293F-11E4-93BD-AFD0FE6D1DFD")
-_PROX_CHAR = (
-    bluetooth.UUID("3E099912-293F-11E4-93BD-AFD0FE6D1DFD"),
-    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
-    (
-        (
-          # org.bluetooth.descriptor.gatt.characteristic_user_description
-          bluetooth.UUID(0x2901),
-          _FLAG_DESC_READ | _FLAG_DESC_WRITE,
-        ),
-    )
-)
-_PROX_TIME_CHAR = (
-    # org.bluetooth.characteristic.date_time
-    bluetooth.UUID(0x2A08),
-    bluetooth.FLAG_READ | bluetooth.FLAG_NOTIFY,
-)
-_PROX_SERVICE = (
-    _PROX_SENSE_UUID,
-    (_PROX_CHAR, _PROX_TIME_CHAR,),
-)
-
-
 class BLE_SERVER:
-    def __init__(self, ble, name='my_server'):
+    def __init__(self, ble, name='C_00'):
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
         (
-            (self._tx_handle, self._rx_handle),
-            (self._current_time_handle, self._date_time_handle),
-            (self._file_count_handle, self._file_desc_handle),
-            (self._prox_handle, self._prox_desc_handle, self._prox_time_handle),
+            (self._rx_handle,),
+            (self._current_time_handle, self._date_time_handle,),
+            (self._file_count_handle, self._file_desc_handle,),
         ) = self._ble.gatts_register_services(
             (
               _UART_SERVICE,
               _CURRENT_TIME_SERVICE,
               _FILES_SERVICE,
-              _PROX_SERVICE,
             )
         )
         
@@ -122,15 +94,13 @@ class BLE_SERVER:
         self._payload = advertising_payload(
             name=name,
             services=[
-                # _UART_UUID,
-                _CURRENT_TIME_UUID,
+                _UART_UUID,
+                # _CURRENT_TIME_UUID,
                 # _FILES_UUID,
-                # _PROX_SENSE_UUID,
             ],
         )
 
         self._ble.gatts_write(self._file_desc_handle, "Number of Files")
-        self._ble.gatts_write(self._prox_desc_handle, "Received Signal Strength Indicator (0-127)")
 
         self._advertise()
 
@@ -156,18 +126,21 @@ class BLE_SERVER:
             conn_handle, value_handle = data
             if conn_handle in self._connections:
                 if value_handle == self._rx_handle:
+                    # Since _IRQ_GATTS_READ_REQUEST doesn't work for ESP32-CAM these write operations will actually notify the value.
                     print("  UART write")
-                    self._rx_buffer += self._ble.gatts_read(self._rx_handle)
+                    self._rx_buffer = self._ble.gatts_read(self._rx_handle)
                     rx = self.read(self._rx_buffer).decode('UTF-8').strip()
                     print("rx: ", rx)
-                    if rx == "scan":
-                        print("starting scan")
-                        self._ble.gap_scan()
-                    elif rx == "stop":
-                        print("stopping scan")
-                        self._ble.gap_scan(None)
+                    if rx == "time":
+                        now = nowBytes()
+                        print("Time as bytes is", now)
+                        print("Time is", nowStringExtended())
+                        self._ble.gatts_write(self._date_time_handle, now)
+                        self._ble.gatts_notify(conn_handle, self._date_time_handle)
                     elif rx == "files":
-                        print("files")
+                        packed = self.getFileCount()
+                        self._ble.gatts_write(self._file_count_handle, packed)
+                        self._ble.gatts_notify(conn_handle, self._file_count_handle)
                 elif value_handle == self._date_time_handle:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
                     print("Write time")
@@ -176,7 +149,7 @@ class BLE_SERVER:
                 elif value_handle == self._file_count_handle:
                     # Convert from int to a byte literal in order to write to a ble value
                     print("Write file count")
-                    packed = struct.pack("<h",len(uos.listdir('sd'))-1)
+                    packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
 
@@ -195,21 +168,16 @@ class BLE_SERVER:
 
         elif event == _IRQ_SCAN_RESULT:
             print("_IRQ_SCAN_RESULT")
-            addr_type, addr, adv_type, rssi, adv_data = data
-            positive_rssi = 127 + rssi
-            now = nowBytes() # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
-            print('positive_rssi:', positive_rssi, '   now:', now)
-            self._ble.gatts_write(self._prox_handle, struct.pack(
-            "<h", positive_rssi))
-            self._ble.gatts_write(self._prox_time_handle, now)
-            for conn_handle in self._connections:
-                self._ble.gatts_notify(conn_handle, self._prox_handle)
-                self._ble.gatts_notify(conn_handle, self._prox_time_handle)
 
         elif event == _IRQ_SCAN_DONE:
             print("_IRQ_SCAN_DONE")
             pass
 
+    def getFileCount(self):
+        count = len(uos.listdir('sd'))-1
+        print("File count is", count)
+        packed = struct.pack("<h", count)
+        return packed
 
     def any(self):
         return len(self._rx_buffer)
@@ -223,7 +191,7 @@ class BLE_SERVER:
 
     def write(self, data):
         for conn_handle in self._connections:
-            self._ble.gatts_notify(conn_handle, self._tx_handle, data)
+            self._ble.gatts_notify(conn_handle, self._rx_handle, data)
 
     def close(self):
         for conn_handle in self._connections:
@@ -231,9 +199,9 @@ class BLE_SERVER:
         self._connections.clear()
 
     def set_time(self, date_time, notify=True):
-        """date_time is input as bytes string"""
+        """date_time is input as a bytes string"""
         # 0x2A08 date_time is stored as a bytes string uint16 uint8 uint8 uint8 uint8 uint8
-        if not date_time:
+        if not date_time or date_time == b'\x00':  # Just read the time
             now = nowBytes()
             print("Getting date_time:", struct.unpack("<hbbbbb", now))
             self._ble.gatts_write(self._date_time_handle, now)
@@ -241,6 +209,7 @@ class BLE_SERVER:
             print("Setting date_time:",date_time)
             set_time_ble(date_time)
             self._ble.gatts_write(self._date_time_handle, date_time)
+        print("Time is set to", nowStringExtended())
         if notify:
             for conn_handle in self._connections:
                 if notify:
@@ -266,7 +235,6 @@ class BLE_SERVER:
 
 def demo():
     from utime import sleep
-    from my_time import nowStringExtended
     import random
 
     try:
@@ -278,18 +246,11 @@ def demo():
 
     except Exception as e:
         print("BLE Error:", e)
+        raise
 
     try:
-        # Scan to get the RSSI (Received Signal Strength Indication aka Proximity)
-        ble.gap_scan()
-
-        while True:
-            # Notify the time
-            my_device.write(nowStringExtended() + "\n")
-            my_device.set_time((2020, 1, 2, 3, 4, 5), notify=True)
-            sleep(1)
+        my_device.set_time((2020, 1, 2, 3, 4, 5), notify=True)
     except KeyboardInterrupt:
-        ble.gap_scan(None)
         pass
 
     my_device.close()

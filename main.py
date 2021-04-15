@@ -20,9 +20,8 @@ from ftp import ftpserver
 from config import *
 import bluetooth
 import my_files
-from my_time import nowStringExtended, deep_sleep_start
+from my_time import nowString, nowStringExtended, deep_sleep_start
 from my_bluetooth import BLE_SERVER
-from my_usun import get_sunrise_sunset
 
 if app_config['mode'] == 'MQTT':
     from umqtt.simple2 import MQTTClient
@@ -69,7 +68,7 @@ except Exception as e:
 
 proc_time_ms = 0
 this_time = utime.ticks_ms() - app_config['sleep_ms']
-tz = -5
+tz = -5  # Timezone ignores Daylight Saving Time
 doy = 0
 error_counter = 0
 loop = True
@@ -103,7 +102,7 @@ while loop:
         # save photo
         if app_config['mode'] == 'microSD':
             count = my_files.jpgCount('sd/')
-            filename = 'sd/{:05d}.jpg'.format(count + 1)
+            filename = 'sd/{:05d}-%s.jpg'.format(count + 1) % (nowString())
             f = open(filename, 'w')
             f.write(buf)
             utime.sleep_ms(200)
