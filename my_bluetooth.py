@@ -3,7 +3,7 @@ import struct
 import uos
 from ble_advertising import advertising_payload
 from micropython import const
-from my_time import nowStringExtended, nowBytes, set_time_ble
+from my_time import nowStringExtended, nowBytesDateTime, bytesCurrentTime, set_time_ble
 import utime
 import my_files
 from my_led import setLed
@@ -40,14 +40,9 @@ _CURRENT_TIME_CHAR = (
     bluetooth.UUID(0x2A2B),
     bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
 )
-_DATE_TIME_CHAR = (
-    # org.bluetooth.characteristic.date_time
-    bluetooth.UUID(0x2A08),
-    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
-)
 _CURRENT_TIME_SERVICE = (
     _CURRENT_TIME_UUID,
-    (_CURRENT_TIME_CHAR, _DATE_TIME_CHAR,),
+    (_CURRENT_TIME_CHAR,),
 )
 
 
@@ -77,7 +72,7 @@ class BLE_SERVER:
         self._ble.irq(self._irq)
         (
             (self._rx_handle,),
-            (self._current_time_handle, self._date_time_handle,),
+            (self._current_time_handle,),
             (self._file_count_handle, self._file_desc_handle,),
         ) = self._ble.gatts_register_services(
             (
@@ -94,9 +89,9 @@ class BLE_SERVER:
         self._payload = advertising_payload(
             name=name,
             services=[
-                _UART_UUID,
-                # _CURRENT_TIME_UUID,
-                # _FILES_UUID,
+                # _UART_UUID,
+                _CURRENT_TIME_UUID,
+                _FILES_UUID,
             ],
         )
 
@@ -132,19 +127,19 @@ class BLE_SERVER:
                     rx = self.read(self._rx_buffer).decode('UTF-8').strip()
                     print("rx: ", rx)
                     if rx == "time":
-                        now = nowBytes()
+                        now = bytesCurrentTime()
                         print("Time as bytes is", now)
                         print("Time is", nowStringExtended())
-                        self._ble.gatts_write(self._date_time_handle, now)
-                        self._ble.gatts_notify(conn_handle, self._date_time_handle)
+                        self._ble.gatts_write(self._current_time_handle, now)
+                        self._ble.gatts_notify(conn_handle, self._current_time_handle)
                     elif rx == "files":
                         packed = self.getFileCount()
                         self._ble.gatts_write(self._file_count_handle, packed)
                         self._ble.gatts_notify(conn_handle, self._file_count_handle)
-                elif value_handle == self._date_time_handle:
+                elif value_handle == self._current_time_handle:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
                     print("Write time")
-                    time_in = self._ble.gatts_read(self._date_time_handle)
+                    time_in = self._ble.gatts_read(self._current_time_handle)
                     self.set_time(time_in)
                 elif value_handle == self._file_count_handle:
                     # Convert from int to a byte literal in order to write to a ble value
@@ -199,21 +194,20 @@ class BLE_SERVER:
         self._connections.clear()
 
     def set_time(self, date_time, notify=True):
-        """date_time is input as a bytes string"""
-        # 0x2A08 date_time is stored as a bytes string uint16 uint8 uint8 uint8 uint8 uint8
+        """date_time is input as a bytes string (for BLE UUID 0x2A08) uint16 uint8 uint8 uint8 uint8 uint8"""
         if not date_time or date_time == b'\x00':  # Just read the time
-            now = nowBytes()
+            now = nowBytesDateTime()
             print("Getting date_time:", struct.unpack("<hbbbbb", now))
-            self._ble.gatts_write(self._date_time_handle, now)
+            self._ble.gatts_write(self._current_time_handle, now + b'\x00\x00\x03')
         else:
             print("Setting date_time:",date_time)
             set_time_ble(date_time)
-            self._ble.gatts_write(self._date_time_handle, date_time)
+            self._ble.gatts_write(self._current_time_handle, date_time + b'\x00\x00\x03')
         print("Time is set to", nowStringExtended())
         if notify:
             for conn_handle in self._connections:
                 if notify:
-                    self._ble.gatts_notify(conn_handle, self._date_time_handle)
+                    self._ble.gatts_notify(conn_handle, self._current_time_handle)
 
     def _advertise(self, interval_us=500000):
         print("Advertising...")
@@ -249,7 +243,7 @@ def demo():
         raise
 
     try:
-        my_device.set_time((2020, 1, 2, 3, 4, 5), notify=True)
+        my_device.set_time((b'\xE5\x07\x01\x11\x0F\x05\x00'), notify=True)
     except KeyboardInterrupt:
         pass
 

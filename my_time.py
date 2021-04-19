@@ -35,8 +35,8 @@ def nowString():
     return timeISO8601
 
 
-def nowBytes():
-    """Returns the current GMT system date in a format that Bluetooth Low Energy UUID 0x2A08 expects"""
+def nowBytesDateTime():
+    """Returns the current GMT system date in a format that Bluetooth Low Energy UUID 0x2A08 (Date Time) expects"""
     # b'\xE5\x07\x01\x11\x0F\x05\x00'  is 2021 01 17 15 05 00
     import machine
     rtc = machine.RTC()
@@ -44,6 +44,32 @@ def nowBytes():
     time_bytes = struct.pack("<hbbbbb", timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
     return time_bytes
 
+
+def bytesCurrentTime():
+    """
+    Returns the current GMT system date in a format that Bluetooth Low Energy UUID 0x2A2B (Current Time) expects
+
+    Exact Time 256 + Adjust Reason(uint8)
+    Exact Time 256 = Day Date Time + Fractions256(uint8)
+    
+    Day Date Time = Date Time + Day of Week
+    Date Time = Year(uint16) + Month(uint8) + Day(uint8) + Hours(uint8) + Minutes(uint8) + Seconds(uint8)
+    Day of Week = Day of Week(uint8) [0=unknown, 1=Monday, etc.]
+
+    Octet Meaning  (left to right)
+    ----- -------
+    0     Year
+    1     Year
+    2     Month
+    3     Day
+    4     Hours
+    5     Minutes
+    6     Seconds
+    7     Day of Week (0 = unknown)
+    8     Fractions256 (0 = uknown)
+    9     Adjust Reason (0x03 = Manual Update => External Reference => No Time Zone Change => No DST Change)
+    """
+    return nowBytesDateTime() + b'\x00\x00\x03'
 
 def set_time_secs(secs):
     """secs: Seconds since 01-Jan-2000 12:00a GMT"""
@@ -96,7 +122,7 @@ def set_time_ntp(error_count=0):
     import ntptime
     try:
         ntptime.settime()
-        print("ntptime.settime(): ", nowStringExtended(), "------------------")
+        print("ntptime.settime(): ", nowStringExtended(), "\n++++++++++++++++++++")
     except Exception as e:
         if error_count < 5:
           print(error_count, "seconds")
@@ -150,8 +176,7 @@ def print_all():
     print("nowString():        ", nowString())          # Prints YYMMDDThhmmssZ
     # Prints YY-MM-DDThh:mm:ssZ
     print("nowStringExtended():", nowStringExtended())
-    print("nowBytes():         ", nowBytes())
-    print()
+    print("nowBytesDateTime():         ", nowBytesDateTime())
     print_ntp_time()  # Prints seconds
     print_datetime()  # Prints tuple
     # print_localtime() # Prints tuple and is exactly the same as gmtime()
@@ -205,13 +230,18 @@ def demo():
 
     print_all()
 
-    print("Setting to [", Y, M, D, h, m, s, "]")
+    print("\nSetting to [", Y, M, D, h, m, s, "]")
     set_time_tuple([Y, M, D, h, m, s])
+    print_all()
 
     # print("Setting to 0")
     # set_time_secs(0)
 
+    print("\nSetting to xE5 x07 x01 x11 x0F x05 x00")
+    set_time_ble(b'\xE5\x07\x01\x11\x0F\x05\x00')
     print_all()
+
+    print("\nSetting to ntp")
     set_time_ntp()
     print_all()
 
