@@ -196,9 +196,9 @@ class BLE_SERVER:
     def set_time(self, date_time, notify=True):
         """date_time is input as a bytes string (for BLE UUID 0x2A08) uint16 uint8 uint8 uint8 uint8 uint8"""
         if not date_time or date_time == b'\x00':  # Just read the time
-            now = nowBytesDateTime()
-            print("Getting date_time:", struct.unpack("<hbbbbb", now))
-            self._ble.gatts_write(self._current_time_handle, now + b'\x00\x00\x03')
+            now = bytesCurrentTime()
+            print("Getting date_time:", struct.unpack("<hbbbbbbbb", now))
+            self._ble.gatts_write(self._current_time_handle, now)
         else:
             print("Setting date_time:",date_time)
             set_time_ble(date_time)

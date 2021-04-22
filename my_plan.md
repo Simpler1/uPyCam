@@ -4,14 +4,11 @@ Timelapse
 
 TODO:
 -----
-Battery
 Power switch (to swap SD Card)
 Build / 3D Print a case
 BLE
   Mobile app to connect
-    View old time / updated time / check the time difference
-    Check number of photos
-    Check voltage
+    Check voltage ??
     Download photos ??
   Voltage Service
     Battery voltage
