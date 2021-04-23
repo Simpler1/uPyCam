@@ -7,6 +7,7 @@ from my_time import nowStringExtended, nowBytesDateTime, bytesCurrentTime, set_t
 import utime
 import my_files
 from my_led import setLed
+import network
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -65,6 +66,25 @@ _FILES_SERVICE = (
 )
 
 
+_WIFI_UUID = bluetooth.UUID("8e0e0001-0a70-4b3c-b314-dd5b9cd7bdc7")
+_WIFI_DESC = (
+    (
+      # org.bluetooth.descriptor.gatt.characteristic_user_description
+      bluetooth.UUID(0x2901),
+      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+    ),
+)
+_WIFI_CHAR = (
+    bluetooth.UUID("8e0e0002-0a70-4b3c-b314-dd5b9cd7bdc7"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    _WIFI_DESC,
+)
+_WIFI_SERVICE = (
+    _WIFI_UUID,
+    (_WIFI_CHAR,),
+)
+
+
 class BLE_SERVER:
     def __init__(self, ble, name='C_00'):
         self._ble = ble
@@ -74,11 +94,13 @@ class BLE_SERVER:
             (self._rx_handle,),
             (self._current_time_handle,),
             (self._file_count_handle, self._file_desc_handle,),
+            (self._wifi_handle, self._wifi_desc_handle,),
         ) = self._ble.gatts_register_services(
             (
               _UART_SERVICE,
               _CURRENT_TIME_SERVICE,
               _FILES_SERVICE,
+              _WIFI_SERVICE,
             )
         )
         
@@ -90,12 +112,14 @@ class BLE_SERVER:
             name=name,
             services=[
                 # _UART_UUID,
-                _CURRENT_TIME_UUID,
-                _FILES_UUID,
+                # _CURRENT_TIME_UUID,
+                # _FILES_UUID,
+                _WIFI_UUID,
             ],
         )
 
         self._ble.gatts_write(self._file_desc_handle, "Number of Files")
+        self._ble.gatts_write(self._wifi_desc_handle, "WiFi State")
 
         self._advertise()
 
@@ -147,6 +171,18 @@ class BLE_SERVER:
                     packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
+                elif value_handle == self._wifi_handle:
+                    # Convert from int to a byte literal in order to write to a ble value
+                    print("Write WiFi state")
+                    wifi_in = self._ble.gatts_read(self._wifi_handle)
+                    wifi_bool = True if struct.unpack('b', wifi_in)[0] == 1 else False
+
+                    print("WiFi", wifi_bool)
+                    sta_if = network.WLAN(network.STA_IF)
+                    sta_if.active(wifi_bool)
+
+                    self._ble.gatts_write(self._wifi_handle, wifi_in)
+                    self._ble.gatts_notify(conn_handle, self._wifi_handle)
 
 
 

@@ -45,4 +45,4 @@ if machine.reset_cause() == machine.DEEPSLEEP_RESET:
 
 # print("\n  esp32.raw_temperature:", str(raw_temperature()) + chr(176) + "F")
 
-do_connect()
+# do_connect()
