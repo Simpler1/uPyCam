@@ -7,13 +7,14 @@
 #
 # When setting through BLE, use machine.RTC().datetime([Y,M,D,h,m,s,0,0])
 #
-# time and utime classes will not set the time.
+# time and time classes will not set the time.
 
 import struct
 import machine
 import config
 import ntptime
 import time
+from config import *
 
 def nowStringExtended():
     """Returns the current GMT system date in extended ISO8601 format: YYYY-MM-DDThh:mm:ssZ """
@@ -70,6 +71,43 @@ def bytesCurrentTime():
     9     Adjust Reason (0x03 = Manual Update => External Reference => No Time Zone Change => No DST Change)
     """
     return nowBytesDateTime() + b'\x00\x00\x03'
+
+
+def bytesTime(timeTuple):
+    time_bytes = struct.pack("<hbbbbb", timeTuple[0], timeTuple[1], timeTuple[2], timeTuple[3], timeTuple[4], timeTuple[5])
+    return time_bytes
+
+# sr = Sunrise
+# ss = Sunset
+# ut = univeral time
+# slt = standard local time (no DST)
+def getGmtSleepStartStopTimes():
+    tz = -5  # Timezone ignores Daylight Saving Time
+    doy = 0  # Day of Year
+    now_ut = time.gmtime()
+    if now_ut[0] > 2000:   # don't deep sleep if the date has not been set
+        # Need the local time to know what day it is (which changes with the timezone)
+        now_slt = time.gmtime(time.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
+        if doy != now_slt[7]:
+            doy = now_slt[7]
+            ss_slt = sunrise_sunset[doy][1]
+            sr_slt = sunrise_sunset[doy+1][0]
+            print("\nSunset:", ss_slt, " Sunrise:", sr_slt, "EST\n")
+        off_at_hm = [ss_slt[0], ss_slt[1] + 25] # 25 minutes after sunset
+        on_at_hm =  [sr_slt[0], sr_slt[1] - 25] # 25 minutes before sunrise
+        off_at_time = (2021, 1, doy, off_at_hm[0], off_at_hm[1], 0, 0, 0)
+        on_at_time =  (2021, 1, doy+1, on_at_hm[0], on_at_hm[1], 0, 0, 0)
+        off_at_utime = (2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)
+        on_at_utime =  (2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)
+        off_at_sec = time.mktime(off_at_time)
+        on_at_sec =  time.mktime(on_at_time)
+        if off_at_sec < time.mktime(now_slt) and time.mktime(now_slt) < on_at_sec:
+            sr_day = doy + 1 if now_slt[3] > 12 else doy
+            sleep_time_s = time.mktime((2021, 1, sr_day, on_at_hm[0], on_at_hm[1], 0, 0, 0)) - time.mktime(now_slt)
+            deep_sleep_start(sleep_time_s)
+        return (off_at_utime, on_at_utime)
+    return ((0,0,0,0,0,0),(0,0,0,0,0,0))
+
 
 def set_time_secs(secs):
     """secs: Seconds since 01-Jan-2000 12:00a GMT"""

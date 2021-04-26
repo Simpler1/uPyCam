@@ -14,13 +14,13 @@
 
 import uos
 import machine
-import utime
+import time
 import camera
 from ftp import ftpserver
 from config import *
 import bluetooth
 import my_files
-from my_time import nowString, nowStringExtended, deep_sleep_start
+from my_time import nowString, nowStringExtended, deep_sleep_start, getGmtSleepStartStopTimes
 from my_bluetooth import BLE_SERVER
 
 if app_config['mode'] == 'MQTT':
@@ -58,7 +58,7 @@ try:
 
 except Exception as e:
     print("Startup Error:", str(e))
-    utime.sleep_ms(5000)
+    time.sleep_ms(5000)
     machine.reset()
 try:
     ble = bluetooth.BLE()
@@ -67,29 +67,12 @@ except Exception as e:
     print("BLE Error:", e)
 
 proc_time_ms = 0
-this_time = utime.ticks_ms() - app_config['sleep_ms']
-tz = -5  # Timezone ignores Daylight Saving Time
-doy = 0
+this_time = time.ticks_ms() - app_config['sleep_ms']
 error_counter = 0
 loop = True
 while loop:
     try:
-        now_ut = utime.gmtime()
-        if now_ut[0] > 2000:
-            # Need the local time to know what day it is (which changes with the timezone)
-            now_lt = utime.gmtime(utime.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
-            if doy != now_lt[7]:
-                doy = now_lt[7]
-                ss_lt = sunrise_sunset[doy][1]
-                sr_lt = sunrise_sunset[doy+1][0]
-                print("\nSunset:", ss_lt, " Sunrise:", sr_lt, "\n")
-            off_at = [ss_lt[0], ss_lt[1] + 25] # 25 minutes after sunset
-            on_at =  [sr_lt[0], sr_lt[1] - 25] # 25 minutes before sunrise
-            if utime.mktime((2021, 1, doy, off_at[0], off_at[1], 0, 0, 0)) < utime.mktime(now_lt) or \
-              utime.mktime(now_lt) < utime.mktime((2021, 1, doy, on_at[0], on_at[1], 0, 0, 0)):
-              sr_day = doy + 1 if now_lt[3] > 12 else doy
-              sleep_time_s = utime.mktime((2021, 1, sr_day, on_at[0], on_at[1], 0, 0, 0)) - utime.mktime(now_lt)
-              deep_sleep_start(sleep_time_s)
+        getGmtSleepStartStopTimes()
 
         # prepare for photo
         if app_config['flash']:
@@ -105,7 +88,7 @@ while loop:
             filename = 'sd/{:05d}-%s.jpg'.format(count + 1) % (nowString())
             f = open(filename, 'w')
             f.write(buf)
-            utime.sleep_ms(200)
+            time.sleep_ms(200)
             f.close()
         elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
@@ -114,10 +97,10 @@ while loop:
 
         # sleep
         last_time = this_time
-        this_time = utime.ticks_ms()
+        this_time = time.ticks_ms()
         last_proc_time_ms = proc_time_ms
         proc_time_ms = this_time - last_time - app_config['sleep_ms'] + last_proc_time_ms
-        utime.sleep_ms(app_config['sleep_ms'] - proc_time_ms)
+        time.sleep_ms(app_config['sleep_ms'] - proc_time_ms)
 
     except KeyboardInterrupt:
         print("debugging stopped")

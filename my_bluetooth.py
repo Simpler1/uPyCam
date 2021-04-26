@@ -3,11 +3,12 @@ import struct
 import uos
 from ble_advertising import advertising_payload
 from micropython import const
-from my_time import nowStringExtended, nowBytesDateTime, bytesCurrentTime, set_time_ble
+from my_time import *
 import utime
 import my_files
 from my_led import setLed
 import network
+# from main import getGmtSleepStartStopTimes
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -85,6 +86,37 @@ _WIFI_SERVICE = (
 )
 
 
+_SLEEP_UUID = bluetooth.UUID("908b0001-cf3d-4405-8759-a28c4ae64c53")
+_SLEEP_START_DESC = (
+    (
+      # org.bluetooth.descriptor.gatt.characteristic_user_description
+      bluetooth.UUID(0x2901),
+      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+    ),
+)
+_SLEEP_STOP_DESC = (
+    (
+      # org.bluetooth.descriptor.gatt.characteristic_user_description
+      bluetooth.UUID(0x2901),
+      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+    ),
+)
+_SLEEP_START_CHAR = (
+    bluetooth.UUID("908b0002-cf3d-4405-8759-a28c4ae64c53"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    _SLEEP_START_DESC,
+)
+_SLEEP_STOP_CHAR = (
+    bluetooth.UUID("908b0003-cf3d-4405-8759-a28c4ae64c53"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    _SLEEP_STOP_DESC,
+)
+_SLEEP_SERVICE = (
+    _SLEEP_UUID,
+    (_SLEEP_START_CHAR, _SLEEP_STOP_CHAR,),
+)
+
+
 class BLE_SERVER:
     def __init__(self, ble, name='C_00'):
         self._ble = ble
@@ -95,12 +127,15 @@ class BLE_SERVER:
             (self._current_time_handle,),
             (self._file_count_handle, self._file_desc_handle,),
             (self._wifi_handle, self._wifi_desc_handle,),
+            (self._sleep_start_handle, self._sleep_start_desc_handle,
+            self._sleep_stop_handle, self._sleep_stop_desc_handle,),
         ) = self._ble.gatts_register_services(
             (
               _UART_SERVICE,
               _CURRENT_TIME_SERVICE,
               _FILES_SERVICE,
               _WIFI_SERVICE,
+              _SLEEP_SERVICE,
             )
         )
         
@@ -120,6 +155,8 @@ class BLE_SERVER:
 
         self._ble.gatts_write(self._file_desc_handle, "Number of Files")
         self._ble.gatts_write(self._wifi_desc_handle, "WiFi State")
+        self._ble.gatts_write(self._sleep_start_desc_handle, "Sleep Start")
+        self._ble.gatts_write(self._sleep_stop_desc_handle, "Sleep Stop")
 
         self._advertise()
 
@@ -173,17 +210,37 @@ class BLE_SERVER:
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
                 elif value_handle == self._wifi_handle:
                     # Convert from int to a byte literal in order to write to a ble value
-                    print("Write WiFi state")
+                    print("Get WiFi state")
                     wifi_in = self._ble.gatts_read(self._wifi_handle)
-                    wifi_bool = True if struct.unpack('b', wifi_in)[0] == 1 else False
-
-                    print("WiFi", wifi_bool)
+                    wifi_int = struct.unpack('b', wifi_in)[0]
                     sta_if = network.WLAN(network.STA_IF)
-                    sta_if.active(wifi_bool)
+                    if wifi_int == 1 or wifi_int == 0:
+                        if wifi_int == 1:
+                            wifi_bool = True 
+                        elif wifi_int == 0:
+                            wifi_bool = False
 
-                    self._ble.gatts_write(self._wifi_handle, wifi_in)
+                        print("WiFi set to", wifi_bool)
+                        sta_if.active(wifi_bool)
+                        self._ble.gatts_write(self._wifi_handle, wifi_in)
+                    else:
+                        wifi_bool = sta_if.active()
+                        print("WiFi is", wifi_bool)
+                        wifi_out = struct.pack('<h', wifi_bool)
+                        self._ble.gatts_write(self._wifi_handle, wifi_out)
                     self._ble.gatts_notify(conn_handle, self._wifi_handle)
-
+                elif value_handle == self._sleep_start_handle:
+                    print("Get Sleep Start & Stop Times")
+                    (sleep_start_time, sleep_stop_time) = getGmtSleepStartStopTimes()
+                    print("Sleep start_time:", sleep_start_time)
+                    print("Sleep stop time:", sleep_stop_time)
+                    sleep_start_bytes = bytesTime(sleep_start_time)
+                    sleep_stop_bytes = bytesTime(sleep_stop_time)
+                    self._ble.gatts_write(self._sleep_start_handle, sleep_start_bytes)
+                    self._ble.gatts_write(self._sleep_stop_handle, sleep_stop_bytes)
+                    for conn_handle in self._connections:
+                        self._ble.gatts_notify(conn_handle, self._sleep_start_handle)
+                        self._ble.gatts_notify(conn_handle, self._sleep_stop_handle)
 
 
         elif event == _IRQ_MTU_EXCHANGED:
