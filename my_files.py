@@ -2,6 +2,7 @@
 """Custom file methods"""
 
 from uos import listdir
+from my_time import nowStringExtended
 
 
 def filterJPG(filename):
@@ -17,6 +18,13 @@ def jpgCount(directory):
     jpgFiles = list(filter(filterJPG, files))
     count = len(jpgFiles)
     return count
+
+
+def log(text):
+    t = nowStringExtended()
+    print(text)
+    with open('sd/log.txt', 'w') as f:
+        f.write(t + ": " + text)
 
 
 def demo():

@@ -5,7 +5,7 @@ import utime
 import ntptime
 import machine
 from my_time import nowStringExtended, deep_sleep_end
-from my_led import cycleLed
+from my_led import cycleLed, setLed, setFlash
 from esp32 import raw_temperature
 
 
@@ -42,6 +42,9 @@ def do_connect():
 
 if machine.reset_cause() == machine.DEEPSLEEP_RESET:
     deep_sleep_end()
+
+setLed(False)
+setFlash(False)
 
 # print("\n  esp32.raw_temperature:", str(raw_temperature()) + chr(176) + "F")
 
