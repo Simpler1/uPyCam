@@ -15,7 +15,15 @@ import config
 import ntptime
 import time
 from config import *
-from my_files import log
+
+def log(*args):
+    t = nowStringExtended()
+    list_of_strings = [str(v) for v in args]
+    text = " ".join(list_of_strings)
+    print(text)
+    with open('sd/log.txt', 'a') as f:
+        f.write("\n" + t + ":  " + text)
+
 
 def nowStringExtended():
     """Returns the current GMT system date in extended ISO8601 format: YYYY-MM-DDThh:mm:ssZ """
@@ -93,13 +101,13 @@ def getGmtSleepStartStopTimes():
             doy = now_slt[7]
             ss_slt = sunrise_sunset[doy][1]
             sr_slt = sunrise_sunset[doy+1][0]
-            log("\nSunset:", ss_slt, " Sunrise:", sr_slt, "EST\n")
+            log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST")
         off_at_hm = [ss_slt[0], ss_slt[1] + 25] # 25 minutes after sunset
         on_at_hm =  [sr_slt[0], sr_slt[1] - 25] # 25 minutes before sunrise
         off_at_time = (2021, 1, doy, off_at_hm[0], off_at_hm[1], 0, 0, 0)
         on_at_time =  (2021, 1, doy+1, on_at_hm[0], on_at_hm[1], 0, 0, 0)
-        off_at_utime = (2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)
-        on_at_utime =  (2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)
+        off_at_utime = time.gmtime(time.mktime((2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)))
+        on_at_utime =  time.gmtime(time.mktime((2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
         off_at_sec = time.mktime(off_at_time)
         on_at_sec =  time.mktime(on_at_time)
         if off_at_sec < time.mktime(now_slt) and time.mktime(now_slt) < on_at_sec:
@@ -114,7 +122,7 @@ def set_time_secs(secs):
     """secs: Seconds since 01-Jan-2000 12:00a GMT"""
     # out_time = time.localtime(secs)                # Doesn't work
     out_time = time.gmtime(secs)                   # Doesn't work
-    print("+++++++++++++++++++++")
+    log("+++++++++++++++++++++")
     return out_time
 
 
@@ -126,13 +134,13 @@ def set_time_tuple(input_tuple):
     time_in.insert(3, 0)
     time_in.append(0)
     time_in = tuple(time_in)
-    print("time_in:", time_in)
+    log("time_in:", time_in)
     # out_time = time.mktime(input_tuple)            # Doesn't work
     # out_time = machine.RTC().init(input_tuple)      # works
     out_time = machine.RTC().datetime(time_in)  # works
-    # print("time.gmtime is now:          ", time.gmtime())
-    # print("machine.RTC().datetime is now:", machine.RTC().datetime())
-    print("---------------------")
+    # log("time.gmtime is now:          ", time.gmtime())
+    # log("machine.RTC().datetime is now:", machine.RTC().datetime())
+    log("---------------------")
     return out_time
 
 
@@ -145,13 +153,13 @@ def set_time_ble(byte_string):
     time_in.insert(3, 0)
     time_in.append(0)
     time_in = tuple(time_in)
-    # print("time_in:", time_in)
+    # log("time_in:", time_in)
     # out_time = time.mktime(input_tuple)            # Doesn't work
     # out_time = machine.RTC().init(input_tuple)      # works
     out_time = machine.RTC().datetime(time_in)  # works
-    # print("time.gmtime is now:          ", time.gmtime(), "Y M D h m s wd yd")
-    # print("machine.RTC().datetime is now:", machine.RTC().datetime(), "Y M D wd h m s us")
-    print("********************")
+    # log("time.gmtime is now:          ", time.gmtime(), "Y M D h m s wd yd")
+    # log("machine.RTC().datetime is now:", machine.RTC().datetime(), "Y M D wd h m s us")
+    log("********************")
     return out_time
 
 
@@ -161,15 +169,15 @@ def set_time_ntp(error_count=0):
     import ntptime
     try:
         ntptime.settime()
-        print("ntptime.settime(): ", nowStringExtended(), "\n++++++++++++++++++++")
+        log("ntptime.settime(): ", nowStringExtended(), "\n++++++++++++++++++++")
     except Exception as e:
         if error_count < 5:
-          print(error_count, "seconds")
+          log(error_count, "seconds")
           error_count += 1
           time.sleep(1)
           set_time_ntp(error_count)
         else:
-          print("Couldn't set ntp time after", error_count, "seconds\n", str(e))
+          log("Couldn't set ntp time after", error_count, "seconds\n", str(e))
 
 
 def print_datetime():
@@ -177,45 +185,45 @@ def print_datetime():
     # weekday is 1-7 for Monday through Sunday
     # but actually,
     # weekday is 0-6 for Monday through Sunday
-    print("machine.RTC().datetime():", machine.RTC().datetime())
+    log("machine.RTC().datetime():", machine.RTC().datetime())
     # last one is microseconds
-    print("                              Y  M  D wd  h  m  s  us")
+    log("                              Y  M  D wd  h  m  s  us")
 
 
 def print_localtime():
-    print("time.localtime():        ", time.localtime())
-    print("                              Y  M  D  h  m  s wd yd")
+    log("time.localtime():        ", time.localtime())
+    log("                              Y  M  D  h  m  s wd yd")
     # weekday is 0-6 for Mon-Sun
     # yearday is 1-366
 
 
 def print_gmtime():
-    print("time.gmtime():           ", time.gmtime())
-    print("                              Y  M  D  h  m  s wd yd")
+    log("time.gmtime():           ", time.gmtime())
+    log("                              Y  M  D  h  m  s wd yd")
     # weekday is 0-6 for Mon-Sun
     # yearday is 1-366
 
 
 def print_time():
-    print("time.time():      ", time.time())
-    print("                   Seconds since 2000-Jan-01 12:00am")
+    log("time.time():      ", time.time())
+    log("                   Seconds since 2000-Jan-01 12:00am")
 
 
 def print_ntp_time():
     try:
         import ntptime
-        print("ntptime.time():   ", ntptime.time())
-        print("                   Seconds since 2000-Jan-01 12:00am")
+        log("ntptime.time():   ", ntptime.time())
+        log("                   Seconds since 2000-Jan-01 12:00am")
     except Exception as e:
-        print("Couldn't get ntp time: " + str(e))
+        log("Couldn't get ntp time: " + str(e))
 
 
 def print_all():
-    print()
-    print("nowString():        ", nowString())          # Prints YYMMDDThhmmssZ
+    log()
+    log("nowString():        ", nowString())          # Prints YYMMDDThhmmssZ
     # Prints YY-MM-DDThh:mm:ssZ
-    print("nowStringExtended():", nowStringExtended())
-    print("nowBytesDateTime():         ", nowBytesDateTime())
+    log("nowStringExtended():", nowStringExtended())
+    log("nowBytesDateTime():         ", nowBytesDateTime())
     print_ntp_time()  # Prints seconds
     print_datetime()  # Prints tuple
     # print_localtime() # Prints tuple and is exactly the same as gmtime()
@@ -229,7 +237,7 @@ def print_all():
 
 def deep_sleep_start(seconds):
     import time
-    log("Sleeping for", time.gmtime(seconds)[3:6], "at", time.gmtime())
+    log("Sleeping for " + time.gmtime(seconds)[3:6] + " at " + time.gmtime())
     clock_correction_24hr_s = 0
     try:
         set_time_ntp()
@@ -240,7 +248,7 @@ def deep_sleep_start(seconds):
     # "with open()" handles the close() automatically
     with open('sleep.txt', 'w') as f:
         f.write(line)
-    log("machine.deepsleep(ms): starting to deep sleep for", seconds, "seconds at", nowStringExtended(), "until", time.gmtime(time.time()+seconds), "\n")
+    log("machine.deepsleep(ms): starting to deep sleep for " + seconds + " seconds at " + nowStringExtended() + " until " + time.gmtime(time.time()+seconds), "\n")
     my_led.setLed(False)
     my_led.setFlash(False)
     machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
@@ -253,9 +261,9 @@ def deep_sleep_end():
     parts = line.split("\t")
     time = eval(parts[0])
     seconds = int(parts[1])
-    log("At wake            ", nowStringExtended())
+    log("At wake            " + nowStringExtended())
     machine.RTC().datetime((time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"],) + (0,)))
-    log("Manually set to    ", nowStringExtended())
+    log("Manually set to    " + nowStringExtended())
     # set_time_ntp() # TODO: Temporary while testing lightsleep
 
 
@@ -271,18 +279,18 @@ def demo():
 
     print_all()
 
-    print("\nSetting to [", Y, M, D, h, m, s, "]")
+    log("Setting to [", Y, M, D, h, m, s, "]")
     set_time_tuple([Y, M, D, h, m, s])
     print_all()
 
-    # print("Setting to 0")
+    # log("Setting to 0")
     # set_time_secs(0)
 
-    print("\nSetting to xE5 x07 x01 x11 x0F x05 x00")
+    log("Setting to xE5 x07 x01 x11 x0F x05 x00")
     set_time_ble(b'\xE5\x07\x01\x11\x0F\x05\x00')
     print_all()
 
-    print("\nSetting to ntp")
+    log("Setting to ntp")
     set_time_ntp()
     print_all()
 

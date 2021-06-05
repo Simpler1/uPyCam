@@ -20,7 +20,7 @@ from ftp import ftpserver
 from config import *
 import bluetooth
 import my_files
-from my_time import nowString, nowStringExtended, deep_sleep_start, getGmtSleepStartStopTimes
+from my_time import nowString, nowStringExtended, deep_sleep_start, getGmtSleepStartStopTimes, log
 from my_bluetooth import BLE_SERVER
 
 if app_config['mode'] == 'MQTT':
@@ -58,6 +58,8 @@ try:
 
 except Exception as e:
     print("Startup Error:", str(e))
+    if (str(e) == '16'): 
+        print('Missing SD card <<<---')
     time.sleep_ms(5000)
     machine.reset()
 try:
@@ -93,7 +95,7 @@ while loop:
         elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
 
-        print("Picture", filename, "taken at:", nowStringExtended())
+        log("Picture", filename, "taken at:", nowStringExtended())
 
         # sleep
         last_time = this_time
@@ -103,11 +105,11 @@ while loop:
         time.sleep_ms(app_config['sleep_ms'] - proc_time_ms)
 
     except KeyboardInterrupt:
-        print("debugging stopped")
+        log("debugging stopped")
         loop = False
 
     except Exception as e:
-        print("Error in main loop:", str(e))
+        log("Error in main loop:", str(e))
         error_counter = error_counter + 1
         if error_counter > app_config['max-error']:
             machine.reset()

@@ -161,15 +161,15 @@ class BLE_SERVER:
         self._advertise()
 
     def _irq(self, event, data):
-        print("\nevent:", event)
+        log("event:", event)
         # Track connections so we can send notifications.
         if event == _IRQ_CENTRAL_CONNECT:
-            print("_IRQ_CENTRAL_CONNECT")
+            log("_IRQ_CENTRAL_CONNECT")
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
             setLed(1)
         elif event == _IRQ_CENTRAL_DISCONNECT:
-            print("_IRQ_CENTRAL_DISCONNECT")
+            log("_IRQ_CENTRAL_DISCONNECT")
             conn_handle, _, _ = data
             self._ble.gap_scan(None)
             if conn_handle in self._connections:
@@ -178,19 +178,19 @@ class BLE_SERVER:
             # Start advertising again to allow a new connection.
             self._advertise()
         elif event == _IRQ_GATTS_WRITE:
-            print("_IRQ_GATTS_WRITE")
+            log("_IRQ_GATTS_WRITE")
             conn_handle, value_handle = data
             if conn_handle in self._connections:
                 if value_handle == self._rx_handle:
                     # Since _IRQ_GATTS_READ_REQUEST doesn't work for ESP32-CAM these write operations will actually notify the value.
-                    print("  UART write")
+                    log("  UART write")
                     self._rx_buffer = self._ble.gatts_read(self._rx_handle)
                     rx = self.read(self._rx_buffer).decode('UTF-8').strip()
-                    print("rx: ", rx)
+                    log("rx: ", rx)
                     if rx == "time":
                         now = bytesCurrentTime()
-                        print("Time as bytes is", now)
-                        print("Time is", nowStringExtended())
+                        log("Time as bytes is", now)
+                        log("Time is", nowStringExtended())
                         self._ble.gatts_write(self._current_time_handle, now)
                         self._ble.gatts_notify(conn_handle, self._current_time_handle)
                     elif rx == "files":
@@ -199,18 +199,18 @@ class BLE_SERVER:
                         self._ble.gatts_notify(conn_handle, self._file_count_handle)
                 elif value_handle == self._current_time_handle:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
-                    print("Write time")
+                    log("Write time")
                     time_in = self._ble.gatts_read(self._current_time_handle)
                     self.set_time(time_in)
                 elif value_handle == self._file_count_handle:
                     # Convert from int to a byte literal in order to write to a ble value
-                    print("Write file count")
+                    log("Write file count")
                     packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
                 elif value_handle == self._wifi_handle:
                     # Convert from int to a byte literal in order to write to a ble value
-                    print("Get WiFi state")
+                    log("Get WiFi state")
                     wifi_in = self._ble.gatts_read(self._wifi_handle)
                     wifi_int = struct.unpack('b', wifi_in)[0]
                     sta_if = network.WLAN(network.STA_IF)
@@ -220,20 +220,20 @@ class BLE_SERVER:
                         elif wifi_int == 0:
                             wifi_bool = False
 
-                        print("WiFi set to", wifi_bool)
+                        log("WiFi set to", wifi_bool)
                         sta_if.active(wifi_bool)
                         self._ble.gatts_write(self._wifi_handle, wifi_in)
                     else:
                         wifi_bool = sta_if.active()
-                        print("WiFi is", wifi_bool)
+                        log("WiFi is", wifi_bool)
                         wifi_out = struct.pack('<h', wifi_bool)
                         self._ble.gatts_write(self._wifi_handle, wifi_out)
                     self._ble.gatts_notify(conn_handle, self._wifi_handle)
                 elif value_handle == self._sleep_start_handle:
-                    print("Get Sleep Start & Stop Times")
+                    log("Get Sleep Start & Stop Times")
                     (sleep_start_time, sleep_stop_time) = getGmtSleepStartStopTimes()
-                    print("Sleep start_time:", sleep_start_time)
-                    print("Sleep stop time:", sleep_stop_time)
+                    log("Sleep start_time:", sleep_start_time)
+                    log("Sleep stop time: ", sleep_stop_time)
                     sleep_start_bytes = bytesTime(sleep_start_time)
                     sleep_stop_bytes = bytesTime(sleep_stop_time)
                     self._ble.gatts_write(self._sleep_start_handle, sleep_start_bytes)
@@ -246,24 +246,24 @@ class BLE_SERVER:
         elif event == _IRQ_MTU_EXCHANGED:
             # ATT MTU exchange complete (either initiated by us or the remote device).
             conn_handle, mtu = data
-            print("_IRQ_MTU_EXCHANGED")
-            print("conn_handle:", conn_handle)
-            print("mtu:", mtu)
+            log("_IRQ_MTU_EXCHANGED")
+            log("conn_handle:", conn_handle)
+            log("mtu:", mtu)
 
         elif event == _IRQ_GATTS_INDICATE_DONE:
-            print("_IRQ_GATTS_INDICATE_DONE")
+            log("_IRQ_GATTS_INDICATE_DONE")
             conn_handle, value_handle, status = data
 
         elif event == _IRQ_SCAN_RESULT:
-            print("_IRQ_SCAN_RESULT")
+            log("_IRQ_SCAN_RESULT")
 
         elif event == _IRQ_SCAN_DONE:
-            print("_IRQ_SCAN_DONE")
+            log("_IRQ_SCAN_DONE")
             pass
 
     def getFileCount(self):
         count = len(uos.listdir('sd'))-1
-        print("File count is", count)
+        log("File count is", count)
         packed = struct.pack("<h", count)
         return packed
 
@@ -290,20 +290,20 @@ class BLE_SERVER:
         """date_time is input as a bytes string (for BLE UUID 0x2A08) uint16 uint8 uint8 uint8 uint8 uint8"""
         if not date_time or date_time == b'\x00':  # Just read the time
             now = bytesCurrentTime()
-            print("Getting date_time:", struct.unpack("<hbbbbbbbb", now))
+            log("Getting date_time:", struct.unpack("<hbbbbbbbb", now))
             self._ble.gatts_write(self._current_time_handle, now)
         else:
-            print("Setting date_time:",date_time)
+            log("Setting date_time:",date_time)
             set_time_ble(date_time)
             self._ble.gatts_write(self._current_time_handle, date_time + b'\x00\x00\x03')
-        print("Time is set to", nowStringExtended())
+        log("Time is set to", nowStringExtended())
         if notify:
             for conn_handle in self._connections:
                 if notify:
                     self._ble.gatts_notify(conn_handle, self._current_time_handle)
 
     def _advertise(self, interval_us=500000):
-        print("Advertising...")
+        log("Advertising...")
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
     def is_connected(self):
@@ -328,11 +328,11 @@ def demo():
         ble = bluetooth.BLE()
         my_device = BLE_SERVER(ble)
 
-        print("\nmac:", my_device.pretty_mac(ble.config('mac')[1]))
-        print("gap_name:", ble.config('gap_name').decode('UTF-8'))
+        log("\nmac:", my_device.pretty_mac(ble.config('mac')[1]))
+        log("gap_name:", ble.config('gap_name').decode('UTF-8'))
 
     except Exception as e:
-        print("BLE Error:", e)
+        log("BLE Error:", e)
         raise
 
     try:
