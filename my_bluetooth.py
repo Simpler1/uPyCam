@@ -8,6 +8,7 @@ import utime
 import my_files
 from my_led import setLed
 import network
+import gc
 # from main import getGmtSleepStartStopTimes
 
 _IRQ_CENTRAL_CONNECT = const(1)
@@ -61,9 +62,21 @@ _FILE_COUNT_CHAR = (
     bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
     _FILE_COUNT_DESC,
 )
+_FILE_LOG_DESC = (
+    (
+      # org.bluetooth.descriptor.gatt.characteristic_user_description
+      bluetooth.UUID(0x2901),
+      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+    ),
+)
+_FILE_LOG_CHAR = (
+    bluetooth.UUID("7a890103-e96d-4842-8b3d-69ce27889cd6"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    _FILE_LOG_DESC,
+)
 _FILES_SERVICE = (
     _FILES_UUID,
-    (_FILE_COUNT_CHAR,),
+    (_FILE_COUNT_CHAR,_FILE_LOG_CHAR,),
 )
 
 
@@ -125,7 +138,7 @@ class BLE_SERVER:
         (
             (self._rx_handle,),
             (self._current_time_handle,),
-            (self._file_count_handle, self._file_desc_handle,),
+            (self._file_count_handle, self._file_count_desc_handle,self._file_log_handle, self._file_log_desc_handle,),
             (self._wifi_handle, self._wifi_desc_handle,),
             (self._sleep_start_handle, self._sleep_start_desc_handle,
             self._sleep_stop_handle, self._sleep_stop_desc_handle,),
@@ -153,7 +166,7 @@ class BLE_SERVER:
             ],
         )
 
-        self._ble.gatts_write(self._file_desc_handle, "Number of Files")
+        self._ble.gatts_write(self._file_count_desc_handle, "Number of Files")
         self._ble.gatts_write(self._wifi_desc_handle, "WiFi State")
         self._ble.gatts_write(self._sleep_start_desc_handle, "Sleep Start")
         self._ble.gatts_write(self._sleep_stop_desc_handle, "Sleep Stop")
@@ -168,6 +181,7 @@ class BLE_SERVER:
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
             setLed(1)
+            self.checkingConnection()
         elif event == _IRQ_CENTRAL_DISCONNECT:
             log("_IRQ_CENTRAL_DISCONNECT")
             conn_handle, _, _ = data
@@ -208,6 +222,17 @@ class BLE_SERVER:
                     packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
+                elif value_handle == self._file_log_handle:
+                    print("Write file log")
+                    packed = self.getFileLog()
+                    for chunk in packed:
+                        try:
+                            # print(chunk)
+                            # self._ble.gatts_write(self._file_log_handle, chunk)
+                            self._ble.gatts_notify(conn_handle, self._file_log_handle, chunk)
+                            gc.collect()  # Memory error occurs if this is not called
+                        except Exception as e:
+                            print("Error writing log file:", e)
                 elif value_handle == self._wifi_handle:
                     # Convert from int to a byte literal in order to write to a ble value
                     log("Get WiFi state")
@@ -261,11 +286,26 @@ class BLE_SERVER:
             log("_IRQ_SCAN_DONE")
             pass
 
+    def checkingConnection(self):
+        # while (self.is_connected()):
+        #   log("Checking connection...")
+        #   time.sleep(60)
+        return
+
     def getFileCount(self):
         count = len(uos.listdir('sd'))-1
         log("File count is", count)
         packed = struct.pack("<h", count)
         return packed
+
+    def getFileLog(self):
+        with open('sd/log.txt', 'r') as f:
+            logFile = f.read()
+        log("File log length is", len(logFile))
+        packed = logFile.encode('utf8')
+        # Break into a list of 20 byte chunks
+        splitLogFile = [packed[i:i+20] for i in range(0, len(packed), 20)]
+        return splitLogFile
 
     def any(self):
         return len(self._rx_buffer)
@@ -307,7 +347,7 @@ class BLE_SERVER:
         self._ble.gap_advertise(interval_us, adv_data=self._payload)
 
     def is_connected(self):
-        return True if len(self._connections) > 0 else False        
+        return True if len(self._connections) > 0 else False
 
     def pretty_mac(self, hex_mac):             # hex_mac = b'<a\x05\x15\x9d\xfe'
         s = []

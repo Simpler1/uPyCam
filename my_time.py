@@ -14,6 +14,7 @@ import machine
 import config
 import ntptime
 import time
+import my_led
 from config import *
 
 def log(*args):
@@ -21,9 +22,12 @@ def log(*args):
     list_of_strings = [str(v) for v in args]
     text = " ".join(list_of_strings)
     print(text)
-    with open('sd/log.txt', 'a') as f:
-        f.write("\n" + t + ":  " + text)
-
+    try:
+        with open('sd/log.txt', 'a') as f:
+            f.write("\n" + t + ":  " + text)
+    except Exception as e:
+        print("Error writing to log file:", str(e))
+      
 
 def nowStringExtended():
     """Returns the current GMT system date in extended ISO8601 format: YYYY-MM-DDThh:mm:ssZ """
@@ -177,7 +181,7 @@ def set_time_ntp(error_count=0):
           time.sleep(1)
           set_time_ntp(error_count)
         else:
-          log("Couldn't set ntp time after", error_count, "seconds\n", str(e))
+          log("Couldn't set ntp time after", str(error_count), "seconds\n", str(e))
 
 
 def print_datetime():
@@ -237,7 +241,7 @@ def print_all():
 
 def deep_sleep_start(seconds):
     import time
-    log("Sleeping for " + time.gmtime(seconds)[3:6] + " at " + time.gmtime())
+    log("Sleeping for " + str(time.gmtime(seconds)[3:6]) + " at " + str(time.gmtime()))
     clock_correction_24hr_s = 0
     try:
         set_time_ntp()
@@ -248,7 +252,7 @@ def deep_sleep_start(seconds):
     # "with open()" handles the close() automatically
     with open('sleep.txt', 'w') as f:
         f.write(line)
-    log("machine.deepsleep(ms): starting to deep sleep for " + seconds + " seconds at " + nowStringExtended() + " until " + time.gmtime(time.time()+seconds), "\n")
+    log("machine.deepsleep(ms): starting to deep sleep for " + str(seconds) + " seconds at " + nowStringExtended() + " until " + str(time.gmtime(time.time()+seconds)))
     my_led.setLed(False)
     my_led.setFlash(False)
     machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
