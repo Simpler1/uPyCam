@@ -13,7 +13,6 @@ class sun:
  s = sun() 
  print('sunrise at ',s.sunrise() 
  """
- dt = RTC().datetime()
 
  def __init__(self,lat=38.95,lon=-84.35):
   self.lat=lat  
@@ -24,19 +23,22 @@ class sun:
   return the time of sunrise as a tuple of hour and minute 
   when is a tuple of year, month, day.  
   """  
-  now = 
+  # now = 
+  dt = RTC().datetime()
   if when is None : when = (dt[0], dt[1], dt[2])  
   self.__preptime(when)  
   self.__calc()  
   return sun.__timefromdecimalday(self.sunrise_t)  
     
  def sunset(self,when=None):  
+  dt = RTC().datetime()
   if when is None : when = (dt[0], dt[1], dt[2])  
   self.__preptime(when)  
   self.__calc()  
   return sun.__timefromdecimalday(self.sunset_t)  
     
  def solarnoon(self,when=None):  
+  dt = RTC().datetime()
   if when is None : when = (dt[0], dt[1], dt[2])  
   self.__preptime(when)  
   self.__calc()  

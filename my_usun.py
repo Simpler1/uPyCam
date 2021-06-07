@@ -155,7 +155,7 @@ def demo2():
     is_rise = False
 
     print("Local Sunset at", get_sunrise_sunset(
-        y, m, d, _rise, tz_offset, dst, islat_d, lon_d, zenith))
+        y, m, d, is_rise, tz_offset, dst, lat_d, lon_d, zenith))
     print("Should be:      (1978, 10, 1, 18, 51, 0)")
 
 
