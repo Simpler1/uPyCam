@@ -98,7 +98,7 @@ while loop:
         elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
 
-        log("Picture", filename, "taken at:", nowStringExtended())
+        log("Picture", filename, "taken") # at:", nowStringExtended())
 
         # sleep
         last_time = this_time

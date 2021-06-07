@@ -182,7 +182,7 @@ class BLE_SERVER:
         self._advertise()
 
     def _irq(self, event, data):
-        log("event:", event)
+        # log("event:", event)
         # Track connections so we can send notifications.
         if event == _IRQ_CENTRAL_CONNECT:
             log("_IRQ_CENTRAL_CONNECT")
@@ -200,7 +200,7 @@ class BLE_SERVER:
             # Start advertising again to allow a new connection.
             self._advertise()
         elif event == _IRQ_GATTS_WRITE:
-            log("_IRQ_GATTS_WRITE")
+            # log("_IRQ_GATTS_WRITE")
             conn_handle, value_handle = data
             if conn_handle in self._connections:
                 if value_handle == self._rx_handle:
@@ -221,17 +221,17 @@ class BLE_SERVER:
                         self._ble.gatts_notify(conn_handle, self._file_count_handle)
                 elif value_handle == self._current_time_handle:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
-                    log("Write time")
+                    # log("Write time")
                     time_in = self._ble.gatts_read(self._current_time_handle)
                     self.set_time(time_in)
                 elif value_handle == self._file_count_handle:
                     # Convert from int to a byte literal in order to write to a ble value
-                    log("Write file count")
+                    # log("Write file count")
                     packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
                 elif value_handle == self._file_log_handle:
-                    print("Write file log")
+                    # print("Write file log")
                     packed = self.getFileLog()
                     for chunk in packed:
                         try:
@@ -346,10 +346,10 @@ class BLE_SERVER:
             log("Getting date_time:", struct.unpack("<hbbbbbbbb", now))
             self._ble.gatts_write(self._current_time_handle, now)
         else:
-            log("Setting date_time:",date_time)
+            log("Setting date_time:", struct.unpack("<hbbbbb", date_time))
             set_time_ble(date_time)
             self._ble.gatts_write(self._current_time_handle, date_time + b'\x00\x00\x03')
-        log("Time is set to", nowStringExtended())
+        log("Time is ", nowStringExtended())
         if notify:
             for conn_handle in self._connections:
                 if notify:
