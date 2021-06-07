@@ -175,6 +175,7 @@ class BLE_SERVER:
         )
 
         self._ble.gatts_write(self._file_count_desc_handle, "Number of Files")
+        self._ble.gatts_write(self._file_log_desc_handle, "Log File")
         self._ble.gatts_write(self._wifi_desc_handle, "WiFi State")
         self._ble.gatts_write(self._sleep_start_desc_handle, "Sleep Start")
         self._ble.gatts_write(self._sleep_stop_desc_handle, "Sleep Stop")
