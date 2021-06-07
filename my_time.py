@@ -94,9 +94,9 @@ def bytesTime(timeTuple):
 # ss = Sunset
 # ut = univeral time
 # slt = standard local time (no DST)
-def getGmtSleepStartStopTimes():
+def getGmtSleepStartStopTimes(off_at_utime, on_at_utime, doy):
     tz = -5  # Timezone ignores Daylight Saving Time
-    doy = 0  # Day of Year
+    # doy = 0  # Day of Year
     now_ut = time.gmtime()
     if now_ut[0] > 2000:   # don't deep sleep if the date has not been set
         # Need the local time to know what day it is (which changes with the timezone)
@@ -105,21 +105,22 @@ def getGmtSleepStartStopTimes():
             doy = now_slt[7]
             ss_slt = sunrise_sunset[doy][1]
             sr_slt = sunrise_sunset[doy+1][0]
-            log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST")
-        off_at_hm = [ss_slt[0], ss_slt[1] + 25] # 25 minutes after sunset
-        on_at_hm =  [sr_slt[0], sr_slt[1] - 25] # 25 minutes before sunrise
-        off_at_time = (2021, 1, doy, off_at_hm[0], off_at_hm[1], 0, 0, 0)
-        on_at_time =  (2021, 1, doy+1, on_at_hm[0], on_at_hm[1], 0, 0, 0)
-        off_at_utime = time.gmtime(time.mktime((2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)))
-        on_at_utime =  time.gmtime(time.mktime((2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
-        off_at_sec = time.mktime(off_at_time)
-        on_at_sec =  time.mktime(on_at_time)
-        if off_at_sec < time.mktime(now_slt) and time.mktime(now_slt) < on_at_sec:
+            off_at_hm = [ss_slt[0], ss_slt[1] + 25] # 25 minutes after sunset
+            on_at_hm =  [sr_slt[0], sr_slt[1] - 25] # 25 minutes before sunrise
+            # off_at_time = (2021, 1, doy, off_at_hm[0], off_at_hm[1], 0, 0, 0)
+            # on_at_time =  (2021, 1, doy+1, on_at_hm[0], on_at_hm[1], 0, 0, 0)
+            off_at_utime = time.gmtime(time.mktime((2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)))
+            on_at_utime =  time.gmtime(time.mktime((2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
+            log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST", "|| Off at:", off_at_utime, " On at:", on_at_utime, " GMT")
+        off_at_utime_sec = time.mktime(off_at_utime)
+        on_at_utime_sec =  time.mktime(on_at_utime)
+        if off_at_utime_sec < time.mktime(now_ut) and time.mktime(now_ut) < on_at_utime_sec:
             sr_day = doy + 1 if now_slt[3] > 12 else doy
-            sleep_time_s = time.mktime((2021, 1, sr_day, on_at_hm[0], on_at_hm[1], 0, 0, 0)) - time.mktime(now_slt)
+            # sleep_time_s = time.mktime((2021, 1, sr_day, on_at_hm[0], on_at_hm[1], 0, 0, 0)) - time.mktime(now_slt)
+            sleep_time_s = time.mktime(on_at_utime) - time.mktime(now_ut)
             deep_sleep_start(sleep_time_s)
-        return (off_at_utime, on_at_utime)
-    return ((0,0,0,0,0,0),(0,0,0,0,0,0))
+        return (off_at_utime, on_at_utime, doy)
+    return ((0,0,0,0,0,0),(0,0,0,0,0,0), doy)
 
 
 def set_time_secs(secs):

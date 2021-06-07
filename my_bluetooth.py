@@ -9,7 +9,7 @@ import my_files
 from my_led import setLed
 import network
 import gc
-# from main import getGmtSleepStartStopTimes
+import json
 
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
@@ -131,7 +131,7 @@ _SLEEP_SERVICE = (
 
 
 class BLE_SERVER:
-    def __init__(self, ble, name='C_00'):
+    def __init__(self, ble):
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
@@ -152,12 +152,20 @@ class BLE_SERVER:
             )
         )
         
+        # Use the my_macs json file to determine the camera name
+        self._mac = self.pretty_mac(self._ble.config('mac')[1])
+        self._macs = self.getMacs()
+        if self._mac in self._macs:
+          name = self._macs[self._mac]
+        else:
+          name = 'C_00'
+
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, 100, True)
         self._rx_buffer = bytearray()
         self._connections = set()
         self._payload = advertising_payload(
-            name=name,
+            name = name,
             services=[
                 # _UART_UUID,
                 # _CURRENT_TIME_UUID,
@@ -256,9 +264,9 @@ class BLE_SERVER:
                     self._ble.gatts_notify(conn_handle, self._wifi_handle)
                 elif value_handle == self._sleep_start_handle:
                     log("Get Sleep Start & Stop Times")
-                    (sleep_start_time, sleep_stop_time) = getGmtSleepStartStopTimes()
-                    log("Sleep start_time:", sleep_start_time)
-                    log("Sleep stop time: ", sleep_stop_time)
+                    (sleep_start_time, sleep_stop_time, _) = getGmtSleepStartStopTimes((0,0,0,0,0,0),(0,0,0,0,0,0),0)
+                    # log("Sleep start_time:", sleep_start_time)
+                    # log("Sleep stop time: ", sleep_stop_time)
                     sleep_start_bytes = bytesTime(sleep_start_time)
                     sleep_stop_bytes = bytesTime(sleep_stop_time)
                     self._ble.gatts_write(self._sleep_start_handle, sleep_start_bytes)
@@ -301,11 +309,16 @@ class BLE_SERVER:
     def getFileLog(self):
         with open('sd/log.txt', 'r') as f:
             logFile = f.read()
-        log("File log length is", len(logFile))
+        log("File log character length is", len(logFile))
         packed = logFile.encode('utf8')
         # Break into a list of 20 byte chunks
         splitLogFile = [packed[i:i+20] for i in range(0, len(packed), 20)]
         return splitLogFile
+
+    def getMacs(self):
+        with open('my_macs.json', 'r') as macsJson:
+            data = macsJson.read()
+        return json.loads(data)
 
     def any(self):
         return len(self._rx_buffer)

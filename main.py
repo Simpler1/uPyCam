@@ -71,10 +71,13 @@ except Exception as e:
 proc_time_ms = 0
 this_time = time.ticks_ms() - app_config['sleep_ms']
 error_counter = 0
+doy = 0
+off_at_utime = (0,0,0,0,0,0)
+on_at_utime = (0,0,0,0,0,0)
 loop = True
 while loop:
     try:
-        getGmtSleepStartStopTimes()
+        (off_at_utime, on_at_utime, doy) = getGmtSleepStartStopTimes(off_at_utime, on_at_utime, doy)
 
         # prepare for photo
         if app_config['flash']:
