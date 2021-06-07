@@ -4,8 +4,6 @@ import uos
 from ble_advertising import advertising_payload
 from micropython import const
 from my_time import *
-import utime
-import my_files
 from my_led import setLed
 import network
 import gc
@@ -52,9 +50,9 @@ _CURRENT_TIME_SERVICE = (
 _FILES_UUID = bluetooth.UUID("7a890001-e96d-4842-8b3d-69ce27889cd6")
 _FILE_COUNT_DESC = (
     (
-      # org.bluetooth.descriptor.gatt.characteristic_user_description
-      bluetooth.UUID(0x2901),
-      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+        # org.bluetooth.descriptor.gatt.characteristic_user_description
+        bluetooth.UUID(0x2901),
+        _FLAG_DESC_READ | _FLAG_DESC_WRITE,
     ),
 )
 _FILE_COUNT_CHAR = (
@@ -64,9 +62,9 @@ _FILE_COUNT_CHAR = (
 )
 _FILE_LOG_DESC = (
     (
-      # org.bluetooth.descriptor.gatt.characteristic_user_description
-      bluetooth.UUID(0x2901),
-      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+        # org.bluetooth.descriptor.gatt.characteristic_user_description
+        bluetooth.UUID(0x2901),
+        _FLAG_DESC_READ | _FLAG_DESC_WRITE,
     ),
 )
 _FILE_LOG_CHAR = (
@@ -76,16 +74,16 @@ _FILE_LOG_CHAR = (
 )
 _FILES_SERVICE = (
     _FILES_UUID,
-    (_FILE_COUNT_CHAR,_FILE_LOG_CHAR,),
+    (_FILE_COUNT_CHAR, _FILE_LOG_CHAR,),
 )
 
 
 _WIFI_UUID = bluetooth.UUID("8e0e0001-0a70-4b3c-b314-dd5b9cd7bdc7")
 _WIFI_DESC = (
     (
-      # org.bluetooth.descriptor.gatt.characteristic_user_description
-      bluetooth.UUID(0x2901),
-      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+        # org.bluetooth.descriptor.gatt.characteristic_user_description
+        bluetooth.UUID(0x2901),
+        _FLAG_DESC_READ | _FLAG_DESC_WRITE,
     ),
 )
 _WIFI_CHAR = (
@@ -102,16 +100,16 @@ _WIFI_SERVICE = (
 _SLEEP_UUID = bluetooth.UUID("908b0001-cf3d-4405-8759-a28c4ae64c53")
 _SLEEP_START_DESC = (
     (
-      # org.bluetooth.descriptor.gatt.characteristic_user_description
-      bluetooth.UUID(0x2901),
-      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+        # org.bluetooth.descriptor.gatt.characteristic_user_description
+        bluetooth.UUID(0x2901),
+        _FLAG_DESC_READ | _FLAG_DESC_WRITE,
     ),
 )
 _SLEEP_STOP_DESC = (
     (
-      # org.bluetooth.descriptor.gatt.characteristic_user_description
-      bluetooth.UUID(0x2901),
-      _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+        # org.bluetooth.descriptor.gatt.characteristic_user_description
+        bluetooth.UUID(0x2901),
+        _FLAG_DESC_READ | _FLAG_DESC_WRITE,
     ),
 )
 _SLEEP_START_CHAR = (
@@ -138,34 +136,35 @@ class BLE_SERVER:
         (
             (self._rx_handle,),
             (self._current_time_handle,),
-            (self._file_count_handle, self._file_count_desc_handle,self._file_log_handle, self._file_log_desc_handle,),
+            (self._file_count_handle, self._file_count_desc_handle,
+             self._file_log_handle, self._file_log_desc_handle,),
             (self._wifi_handle, self._wifi_desc_handle,),
             (self._sleep_start_handle, self._sleep_start_desc_handle,
-            self._sleep_stop_handle, self._sleep_stop_desc_handle,),
+             self._sleep_stop_handle, self._sleep_stop_desc_handle,),
         ) = self._ble.gatts_register_services(
             (
-              _UART_SERVICE,
-              _CURRENT_TIME_SERVICE,
-              _FILES_SERVICE,
-              _WIFI_SERVICE,
-              _SLEEP_SERVICE,
+                _UART_SERVICE,
+                _CURRENT_TIME_SERVICE,
+                _FILES_SERVICE,
+                _WIFI_SERVICE,
+                _SLEEP_SERVICE,
             )
         )
-        
+
         # Use the my_macs json file to determine the camera name
         self._mac = self.pretty_mac(self._ble.config('mac')[1])
         self._macs = self.getMacs()
         if self._mac in self._macs:
-          name = self._macs[self._mac]
+            name = self._macs[self._mac]
         else:
-          name = 'C_00'
+            name = 'C_00'
 
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, 100, True)
         self._rx_buffer = bytearray()
         self._connections = set()
         self._payload = advertising_payload(
-            name = name,
+            name=name,
             services=[
                 # _UART_UUID,
                 # _CURRENT_TIME_UUID,
@@ -215,11 +214,13 @@ class BLE_SERVER:
                         log("Time as bytes is", now)
                         log("Time is", nowStringExtended())
                         self._ble.gatts_write(self._current_time_handle, now)
-                        self._ble.gatts_notify(conn_handle, self._current_time_handle)
+                        self._ble.gatts_notify(
+                            conn_handle, self._current_time_handle)
                     elif rx == "files":
                         packed = self.getFileCount()
                         self._ble.gatts_write(self._file_count_handle, packed)
-                        self._ble.gatts_notify(conn_handle, self._file_count_handle)
+                        self._ble.gatts_notify(
+                            conn_handle, self._file_count_handle)
                 elif value_handle == self._current_time_handle:
                     # Date/time coming in from ble must be "<hbbbbb" (uint16 uint8 uint8 uint8 uint8 uint8)
                     # log("Write time")
@@ -230,7 +231,8 @@ class BLE_SERVER:
                     log("  Get file count")
                     packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
-                    self._ble.gatts_notify(conn_handle, self._file_count_handle)
+                    self._ble.gatts_notify(
+                        conn_handle, self._file_count_handle)
                 elif value_handle == self._file_log_handle:
                     # print("Write file log")
                     packed = self.getFileLog()
@@ -238,7 +240,8 @@ class BLE_SERVER:
                         try:
                             # print(chunk)
                             # self._ble.gatts_write(self._file_log_handle, chunk)
-                            self._ble.gatts_notify(conn_handle, self._file_log_handle, chunk)
+                            self._ble.gatts_notify(
+                                conn_handle, self._file_log_handle, chunk)
                             gc.collect()  # Memory error occurs if this is not called
                         except Exception as e:
                             print("Error writing log file:", e)
@@ -250,7 +253,7 @@ class BLE_SERVER:
                     sta_if = network.WLAN(network.STA_IF)
                     if wifi_int == 1 or wifi_int == 0:
                         if wifi_int == 1:
-                            wifi_bool = True 
+                            wifi_bool = True
                         elif wifi_int == 0:
                             wifi_bool = False
 
@@ -265,17 +268,21 @@ class BLE_SERVER:
                     self._ble.gatts_notify(conn_handle, self._wifi_handle)
                 elif value_handle == self._sleep_start_handle:
                     log("  Get Sleep Start & Stop Times")
-                    (sleep_start_time, sleep_stop_time, _) = getGmtSleepStartStopTimes((0,0,0,0,0,0),(0,0,0,0,0,0),0)
+                    (sleep_start_time, sleep_stop_time, _) = getGmtSleepStartStopTimes(
+                        (0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), 0)
                     # log("Sleep start_time:", sleep_start_time)
                     # log("Sleep stop time: ", sleep_stop_time)
                     sleep_start_bytes = bytesTime(sleep_start_time)
                     sleep_stop_bytes = bytesTime(sleep_stop_time)
-                    self._ble.gatts_write(self._sleep_start_handle, sleep_start_bytes)
-                    self._ble.gatts_write(self._sleep_stop_handle, sleep_stop_bytes)
+                    self._ble.gatts_write(
+                        self._sleep_start_handle, sleep_start_bytes)
+                    self._ble.gatts_write(
+                        self._sleep_stop_handle, sleep_stop_bytes)
                     for conn_handle in self._connections:
-                        self._ble.gatts_notify(conn_handle, self._sleep_start_handle)
-                        self._ble.gatts_notify(conn_handle, self._sleep_stop_handle)
-
+                        self._ble.gatts_notify(
+                            conn_handle, self._sleep_start_handle)
+                        self._ble.gatts_notify(
+                            conn_handle, self._sleep_stop_handle)
 
         elif event == _IRQ_MTU_EXCHANGED:
             # ATT MTU exchange complete (either initiated by us or the remote device).
@@ -349,12 +356,14 @@ class BLE_SERVER:
         else:
             log("  Set date_time:", struct.unpack("<hbbbbb", date_time))
             set_time_ble(date_time)
-            self._ble.gatts_write(self._current_time_handle, date_time + b'\x00\x00\x03')
+            self._ble.gatts_write(self._current_time_handle,
+                                  date_time + b'\x00\x00\x03')
         # log("Time is ", nowStringExtended())
         if notify:
             for conn_handle in self._connections:
                 if notify:
-                    self._ble.gatts_notify(conn_handle, self._current_time_handle)
+                    self._ble.gatts_notify(
+                        conn_handle, self._current_time_handle)
 
     def _advertise(self, interval_us=500000):
         log("Advertising...")
@@ -366,8 +375,10 @@ class BLE_SERVER:
     def pretty_mac(self, hex_mac):             # hex_mac = b'<a\x05\x15\x9d\xfe'
         s = []
         for i in hex_mac:                      # i = list(hex_mac)[0]   =>  60
-            value = hex(i)[2:4]                # value = hex(i)  =>  '0x3c'  =>  '3c'
-            padded = "{:>2}".format(value)     # padded => '3c'   ('5'  => ' 5')
+            # value = hex(i)  =>  '0x3c'  =>  '3c'
+            value = hex(i)[2:4]
+            # padded => '3c'   ('5'  => ' 5')
+            padded = "{:>2}".format(value)
             upper = padded.upper()             # upper => '3C'
             s.append(upper.replace(' ', '0'))  # ['3C', '61', '05', ...]
         s = ':'.join(s)                        # '3C:61:05...

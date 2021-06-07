@@ -1,0 +1,12 @@
+{
+    "python.languageServer": "Pylance",
+    "python.autoComplete.extraPaths": [
+        "./src/lib",
+        "all-stubs/cpython_patch",
+        "all-stubs/mpy_1_13-nightly_frozen/esp32/GENERIC", 
+        "all-stubs/esp32_1_13_0-103",
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.jediEnabled": false,
+}

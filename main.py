@@ -58,7 +58,7 @@ try:
 
 except Exception as e:
     print("Startup Error:", str(e))
-    if (str(e) == '16'): 
+    if (str(e) == '16'):
         print('Missing SD card <<<---')
     time.sleep_ms(5000)
     machine.reset()
@@ -72,12 +72,13 @@ proc_time_ms = 0
 this_time = time.ticks_ms() - app_config['sleep_ms']
 error_counter = 0
 doy = 0
-off_at_utime = (0,0,0,0,0,0)
-on_at_utime = (0,0,0,0,0,0)
+off_at_utime = (0, 0, 0, 0, 0, 0)
+on_at_utime = (0, 0, 0, 0, 0, 0)
 loop = True
 while loop:
     try:
-        (off_at_utime, on_at_utime, doy) = getGmtSleepStartStopTimes(off_at_utime, on_at_utime, doy)
+        (off_at_utime, on_at_utime, doy) = getGmtSleepStartStopTimes(
+            off_at_utime, on_at_utime, doy)
 
         # prepare for photo
         if app_config['flash']:
@@ -98,13 +99,14 @@ while loop:
         elif app_config['mode'] == 'MQTT':
             c.publish(mqtt_config['topic'], buf)
 
-        log("Picture", filename, "taken") # at:", nowStringExtended())
+        log("Picture", filename, "taken")  # at:", nowStringExtended())
 
         # sleep
         last_time = this_time
         this_time = time.ticks_ms()
         last_proc_time_ms = proc_time_ms
-        proc_time_ms = this_time - last_time - app_config['sleep_ms'] + last_proc_time_ms
+        proc_time_ms = this_time - last_time - \
+            app_config['sleep_ms'] + last_proc_time_ms
         time.sleep_ms(app_config['sleep_ms'] - proc_time_ms)
 
     except KeyboardInterrupt:

@@ -3,6 +3,7 @@
 
 from uos import listdir
 
+
 def filterJPG(filename):
     if(".jpg" in filename):
         return True
@@ -24,6 +25,7 @@ def demo():
         print("There is", count, "jpg file")
     else:
         print("There are", count, "jpg files")
+
 
 if __name__ == "__main__":
     demo()

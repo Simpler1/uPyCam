@@ -41,4 +41,3 @@ import ntptime
 # ntptime.settime()
 # t1 = utime.mktime(utime.gmtime())
 # print("machine.lightsleep(ms)     difference after", ms/1000, "seconds is", t1 - t0 - ms/1000, "seconds\n")
-

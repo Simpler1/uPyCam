@@ -17,6 +17,7 @@ import time
 import my_led
 from config import *
 
+
 def log(*args):
     t = nowStringExtended()
     list_of_strings = [str(v) for v in args]
@@ -27,7 +28,7 @@ def log(*args):
             f.write("\n" + t + ":  " + text)
     except Exception as e:
         print("Error writing to log file:", str(e))
-      
+
 
 def nowStringExtended():
     """Returns the current GMT system date in extended ISO8601 format: YYYY-MM-DDThh:mm:ssZ """
@@ -55,7 +56,8 @@ def nowBytesDateTime():
     import machine
     rtc = machine.RTC()
     timestamp = rtc.datetime()
-    time_bytes = struct.pack("<hbbbbb", timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
+    time_bytes = struct.pack(
+        "<hbbbbb", timestamp[0], timestamp[1], timestamp[2], timestamp[4], timestamp[5], timestamp[6])
     return time_bytes
 
 
@@ -65,7 +67,7 @@ def bytesCurrentTime():
 
     Exact Time 256 + Adjust Reason(uint8)
     Exact Time 256 = Day Date Time + Fractions256(uint8)
-    
+
     Day Date Time = Date Time + Day of Week
     Date Time = Year(uint16) + Month(uint8) + Day(uint8) + Hours(uint8) + Minutes(uint8) + Seconds(uint8)
     Day of Week = Day of Week(uint8) [0=unknown, 1=Monday, etc.]
@@ -87,40 +89,47 @@ def bytesCurrentTime():
 
 
 def bytesTime(timeTuple):
-    time_bytes = struct.pack("<hbbbbb", timeTuple[0], timeTuple[1], timeTuple[2], timeTuple[3], timeTuple[4], timeTuple[5])
+    time_bytes = struct.pack(
+        "<hbbbbb", timeTuple[0], timeTuple[1], timeTuple[2], timeTuple[3], timeTuple[4], timeTuple[5])
     return time_bytes
 
 # sr = Sunrise
 # ss = Sunset
 # ut = univeral time
 # slt = standard local time (no DST)
+
+
 def getGmtSleepStartStopTimes(off_at_utime, on_at_utime, doy):
     tz = -5  # Timezone ignores Daylight Saving Time
     # doy = 0  # Day of Year
     now_ut = time.gmtime()
     if now_ut[0] > 2000:   # don't deep sleep if the date has not been set
         # Need the local time to know what day it is (which changes with the timezone)
-        now_slt = time.gmtime(time.mktime(now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
+        now_slt = time.gmtime(time.mktime(
+            now_ut[0:3] + (now_ut[3]+tz,) + now_ut[4:]))
         if doy != now_slt[7]:
             doy = now_slt[7]
             ss_slt = sunrise_sunset[doy][1]
             sr_slt = sunrise_sunset[doy+1][0]
-            off_at_hm = [ss_slt[0], ss_slt[1] + 25] # 25 minutes after sunset
-            on_at_hm =  [sr_slt[0], sr_slt[1] - 25] # 25 minutes before sunrise
+            off_at_hm = [ss_slt[0], ss_slt[1] + 25]  # 25 minutes after sunset
+            on_at_hm = [sr_slt[0], sr_slt[1] - 25]  # 25 minutes before sunrise
             # off_at_time = (2021, 1, doy, off_at_hm[0], off_at_hm[1], 0, 0, 0)
             # on_at_time =  (2021, 1, doy+1, on_at_hm[0], on_at_hm[1], 0, 0, 0)
-            off_at_utime = time.gmtime(time.mktime((2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)))
-            on_at_utime =  time.gmtime(time.mktime((2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
-            log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST", "|| Off at:", off_at_utime, " On at:", on_at_utime, " GMT")
+            off_at_utime = time.gmtime(time.mktime(
+                (2021, 1, doy, off_at_hm[0]-tz, off_at_hm[1], 0, 0, 0)))
+            on_at_utime = time.gmtime(time.mktime(
+                (2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
+            log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST",
+                "|| Off at:", off_at_utime, " On at:", on_at_utime, " GMT")
         off_at_utime_sec = time.mktime(off_at_utime)
-        on_at_utime_sec =  time.mktime(on_at_utime)
+        on_at_utime_sec = time.mktime(on_at_utime)
         if off_at_utime_sec < time.mktime(now_ut) and time.mktime(now_ut) < on_at_utime_sec:
             sr_day = doy + 1 if now_slt[3] > 12 else doy
             # sleep_time_s = time.mktime((2021, 1, sr_day, on_at_hm[0], on_at_hm[1], 0, 0, 0)) - time.mktime(now_slt)
             sleep_time_s = time.mktime(on_at_utime) - time.mktime(now_ut)
             deep_sleep_start(sleep_time_s)
         return (off_at_utime, on_at_utime, doy)
-    return ((0,0,0,0,0,0),(0,0,0,0,0,0), doy)
+    return ((0, 0, 0, 0, 0, 0), (0, 0, 0, 0, 0, 0), doy)
 
 
 def set_time_secs(secs):
@@ -177,12 +186,13 @@ def set_time_ntp(error_count=0):
         log("ntptime.settime(): ", nowStringExtended(), "\n++++++++++++++++++++")
     except Exception as e:
         if error_count < 5:
-          log(error_count, "seconds")
-          error_count += 1
-          time.sleep(1)
-          set_time_ntp(error_count)
+            log(error_count, "seconds")
+            error_count += 1
+            time.sleep(1)
+            set_time_ntp(error_count)
         else:
-          log("Couldn't set ntp time after", str(error_count), "seconds\n", str(e))
+            log("Couldn't set ntp time after", str(
+                error_count), "seconds\n", str(e))
 
 
 def print_datetime():
@@ -242,7 +252,8 @@ def print_all():
 
 def deep_sleep_start(seconds):
     import time
-    log("Sleeping for " + str(time.gmtime(seconds)[3:6]) + " at " + str(time.gmtime()))
+    log("Sleeping for " + str(time.gmtime(seconds)
+                              [3:6]) + " at " + str(time.gmtime()))
     clock_correction_24hr_s = 0
     try:
         set_time_ntp()
@@ -253,7 +264,8 @@ def deep_sleep_start(seconds):
     # "with open()" handles the close() automatically
     with open('sleep.txt', 'w') as f:
         f.write(line)
-    log("machine.deepsleep(ms): starting to deep sleep for " + str(seconds) + " seconds at " + nowStringExtended() + " until " + str(time.gmtime(time.time()+seconds)))
+    log("machine.deepsleep(ms): starting to deep sleep for " + str(seconds) +
+        " seconds at " + nowStringExtended() + " until " + str(time.gmtime(time.time()+seconds)))
     my_led.setLed(False)
     my_led.setFlash(False)
     machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
@@ -267,7 +279,8 @@ def deep_sleep_end():
     time = eval(parts[0])
     seconds = int(parts[1])
     log("At wake            " + nowStringExtended())
-    machine.RTC().datetime((time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"],) + (0,)))
+    machine.RTC().datetime(
+        (time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"],) + (0,)))
     log("Manually set to    " + nowStringExtended())
     # set_time_ntp() # TODO: Temporary while testing lightsleep
 

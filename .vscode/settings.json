@@ -1,26 +1,41 @@
 {
-  "python.linting.enabled": true,
+  // "python.linting.enabled": true,
   // Loaded Stubs:  esp32-micropython-1.11.0 
+  // "python.autoComplete.extraPaths": [
+  //   "${workspaceRoot}/.micropy/micropython/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
+  // ],
+  // "python.autoComplete.typeshedPaths": [
+  //   "${workspaceRoot}/.micropy/micropython/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
+  // ],
+  // "python.analysis.typeshedPaths": [
+  //   "${workspaceRoot}/.micropy/micropython/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
+  // ],
+  // "python.linting.pylintEnabled": true,
+  // "python.pythonPath": "/home/kevin/.virtualenvs/scrapy.py3/bin/python",
+  // "python.analysis.extraPaths": [
+  //   "${workspaceRoot}/.micropy/micropython/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
+  //   "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
+  // ],
+  "python.languageServer": "Pylance",
   "python.autoComplete.extraPaths": [
-    "${workspaceRoot}/.micropy/micropython/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
+    "all-stubs/cpython_core",
+    "all-stubs/micropython-1_15-frozen",
+    "all-stubs/micropython-esp32-1_13-103"
   ],
-  "python.autoComplete.typeshedPaths": [
-    "${workspaceRoot}/.micropy/micropython/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
-  ],
-  "python.analysis.typeshedPaths": [
-    "${workspaceRoot}/.micropy/micropython/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
-  ],
+  "python.linting.enabled": true,
   "python.linting.pylintEnabled": true,
-  "python.pythonPath": "/home/kevin/.virtualenvs/scrapy.py3/bin/python",
+  "python.jediEnabled": false,
   "python.analysis.extraPaths": [
-    "${workspaceRoot}/.micropy/micropython/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/frozen",
-    "${workspaceRoot}/.micropy/esp32-micropython-1.11.0/stubs"
-  ]
+    "all-stubs/cpython_core",
+    "all-stubs/micropython-1_15-frozen",
+    "all-stubs/micropython-esp32-1_13-103/"
+  ],
+  "python.pythonPath": "/home/kevin/.virtualenvs/scrapy.py3/bin/python",
 }
