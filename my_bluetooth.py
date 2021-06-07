@@ -226,7 +226,7 @@ class BLE_SERVER:
                     self.set_time(time_in)
                 elif value_handle == self._file_count_handle:
                     # Convert from int to a byte literal in order to write to a ble value
-                    # log("Write file count")
+                    log("  Get file count")
                     packed = self.getFileCount()
                     self._ble.gatts_write(self._file_count_handle, packed)
                     self._ble.gatts_notify(conn_handle, self._file_count_handle)
@@ -243,7 +243,7 @@ class BLE_SERVER:
                             print("Error writing log file:", e)
                 elif value_handle == self._wifi_handle:
                     # Convert from int to a byte literal in order to write to a ble value
-                    log("Get WiFi state")
+                    log("  Get WiFi state")
                     wifi_in = self._ble.gatts_read(self._wifi_handle)
                     wifi_int = struct.unpack('b', wifi_in)[0]
                     sta_if = network.WLAN(network.STA_IF)
@@ -263,7 +263,7 @@ class BLE_SERVER:
                         self._ble.gatts_write(self._wifi_handle, wifi_out)
                     self._ble.gatts_notify(conn_handle, self._wifi_handle)
                 elif value_handle == self._sleep_start_handle:
-                    log("Get Sleep Start & Stop Times")
+                    log("  Get Sleep Start & Stop Times")
                     (sleep_start_time, sleep_stop_time, _) = getGmtSleepStartStopTimes((0,0,0,0,0,0),(0,0,0,0,0,0),0)
                     # log("Sleep start_time:", sleep_start_time)
                     # log("Sleep stop time: ", sleep_stop_time)
@@ -343,13 +343,13 @@ class BLE_SERVER:
         """date_time is input as a bytes string (for BLE UUID 0x2A08) uint16 uint8 uint8 uint8 uint8 uint8"""
         if not date_time or date_time == b'\x00':  # Just read the time
             now = bytesCurrentTime()
-            log("Getting date_time:", struct.unpack("<hbbbbbbbb", now))
+            log("  Get date_time:", struct.unpack("<hbbbbbbbb", now))
             self._ble.gatts_write(self._current_time_handle, now)
         else:
-            log("Setting date_time:", struct.unpack("<hbbbbb", date_time))
+            log("  Set date_time:", struct.unpack("<hbbbbb", date_time))
             set_time_ble(date_time)
             self._ble.gatts_write(self._current_time_handle, date_time + b'\x00\x00\x03')
-        log("Time is ", nowStringExtended())
+        # log("Time is ", nowStringExtended())
         if notify:
             for conn_handle in self._connections:
                 if notify:
