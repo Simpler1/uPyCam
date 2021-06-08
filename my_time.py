@@ -280,7 +280,7 @@ def deep_sleep_end():
     seconds = int(parts[1])
     log("At wake            " + nowStringExtended())
     machine.RTC().datetime(
-        (time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"],) + (0,)))
+        (time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"] + config.app_config["deepSleepOvernightCorrection_s"],) + (0,)))
     log("Manually set to    " + nowStringExtended())
     # set_time_ntp() # TODO: Temporary while testing lightsleep
 

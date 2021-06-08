@@ -65,6 +65,11 @@ except Exception as e:
 try:
     ble = bluetooth.BLE()
     my_device = BLE_SERVER(ble)
+    _mac = my_device.pretty_mac(my_device._ble.config('mac')[1])
+    name = my_device.getName(_mac)
+    log("   Name:", name)
+    log("   mac:", _mac)
+
 except Exception as e:
     print("BLE Error:", e)
 

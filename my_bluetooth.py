@@ -151,13 +151,8 @@ class BLE_SERVER:
             )
         )
 
-        # Use the my_macs json file to determine the camera name
-        self._mac = self.pretty_mac(self._ble.config('mac')[1])
-        self._macs = self.getMacs()
-        if self._mac in self._macs:
-            name = self._macs[self._mac]
-        else:
-            name = 'C_00'
+        _mac = self.pretty_mac(self._ble.config('mac')[1])
+        name = self.getName(_mac)
 
         # Increase the size of the rx buffer and enable append mode.
         self._ble.gatts_set_buffer(self._rx_handle, 100, True)
@@ -307,6 +302,14 @@ class BLE_SERVER:
         #   log("Checking connection...")
         #   time.sleep(60)
         return
+
+    def getName(self, mac):
+        # Use the my_macs json file to determine the camera name
+        _macs = self.getMacs()
+        if mac in _macs:
+            return _macs[mac]
+        else:
+            return 'C_00'
 
     def getFileCount(self):
         count = len(uos.listdir('sd'))-1
