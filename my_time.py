@@ -266,7 +266,7 @@ def deep_sleep_start(seconds):
     with open('sleep.txt', 'w') as f:
         f.write(line)
     log("machine.deepsleep(ms): starting to deep sleep for " + str(seconds) +
-        " seconds at " + nowStringExtended() + " until " + str(time.gmtime(time.time()+seconds)))
+        " seconds until " + str(time.gmtime(time.time()+seconds)))
     my_led.setLed(False)
     my_led.setFlash(False)
     machine.deepsleep((seconds) * 1000)
