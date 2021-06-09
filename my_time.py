@@ -27,7 +27,10 @@ def log(*args):
         with open('sd/log.txt', 'a') as f:
             f.write("\n" + t + ":  " + text)
     except Exception as e:
-        print("Error writing to log file:", str(e))
+        if (str(e) == '[Errno 2] ENOENT'):
+            print('Log file not available: [Errno 2] ENOENT')
+        else:
+            print("Error writing to log file:", str(e))
 
 
 def nowStringExtended():
@@ -252,9 +255,7 @@ def print_all():
 
 def deep_sleep_start(seconds):
     import time
-    log("Sleeping for " + str(time.gmtime(seconds)
-                              [3:6]) + " at " + str(time.gmtime()))
-    clock_correction_24hr_s = 0
+    log("Sleeping for " + str(time.gmtime(seconds)[3:6]))
     try:
         set_time_ntp()
     except Exception as e:
@@ -268,7 +269,7 @@ def deep_sleep_start(seconds):
         " seconds at " + nowStringExtended() + " until " + str(time.gmtime(time.time()+seconds)))
     my_led.setLed(False)
     my_led.setFlash(False)
-    machine.deepsleep((seconds + clock_correction_24hr_s) * 1000)
+    machine.deepsleep((seconds) * 1000)
     # deep_sleep_end()  # TODO: This is temporary while testing lightsleep
 
 
@@ -311,6 +312,8 @@ def demo():
     log("Setting to ntp")
     set_time_ntp()
     print_all()
+
+    deep_sleep_start(10)
 
 
 def demo1():

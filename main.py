@@ -20,7 +20,7 @@ from ftp import ftpserver
 from config import *
 import bluetooth
 import my_files
-from my_time import nowString, nowStringExtended, deep_sleep_start, getGmtSleepStartStopTimes, log
+from my_time import nowString, deep_sleep_end, getGmtSleepStartStopTimes, log
 from my_bluetooth import BLE_SERVER
 
 if app_config['mode'] == 'MQTT':
@@ -62,6 +62,10 @@ except Exception as e:
         print('Missing SD card <<<---')
     time.sleep_ms(5000)
     machine.reset()
+
+if machine.reset_cause() == machine.DEEPSLEEP_RESET:
+    deep_sleep_end()
+
 try:
     ble = bluetooth.BLE()
     my_device = BLE_SERVER(ble)

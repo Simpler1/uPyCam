@@ -3,10 +3,9 @@ import config
 import network
 import utime
 import ntptime
-import machine
-from my_time import nowStringExtended, deep_sleep_end
+from my_time import nowStringExtended
 from my_led import cycleLed, setLed, setFlash
-from esp32 import raw_temperature
+# from esp32 import raw_temperature
 
 
 def do_connect():
@@ -39,9 +38,6 @@ def do_connect():
     else:
         print('Internet not available')
 
-
-if machine.reset_cause() == machine.DEEPSLEEP_RESET:
-    deep_sleep_end()
 
 setLed(False)
 setFlash(False)
