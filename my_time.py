@@ -123,7 +123,7 @@ def getGmtSleepStartStopTimes(off_at_utime, on_at_utime, doy):
             on_at_utime = time.gmtime(time.mktime(
                 (2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
             log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST",
-                "\n  Off at:", off_at_utime, " On at:", on_at_utime, " GMT")
+                "\n  Off at:", off_at_utime, "\n  On at: ", on_at_utime, " GMT")
         off_at_utime_sec = time.mktime(off_at_utime)
         on_at_utime_sec = time.mktime(on_at_utime)
         if off_at_utime_sec < time.mktime(now_ut) and time.mktime(now_ut) < on_at_utime_sec:
@@ -277,12 +277,15 @@ def deep_sleep_end():
     with open('sleep.txt', 'r') as f:
         line = f.read()
     parts = line.split("\t")
-    time = eval(parts[0])
+    _time = eval(parts[0])
     seconds = int(parts[1])
+    _was = time.time()
     log("At wake            " + nowStringExtended())
     machine.RTC().datetime(
-        (time[0:6] + (time[6] + seconds + config.app_config["deepSleepBootTime_s"] + config.app_config["deepSleepOvernightCorrection_s"],) + (0,)))
+        (_time[0:6] + (_time[6] + seconds + config.app_config["deepSleepBootTime_s"] + config.app_config["deepSleepOvernightCorrection_s"],) + (0,)))
+    _is = time.time()
     log("Manually set to    " + nowStringExtended())
+    log(" Difference of", _was - _is, "seconds")
     # set_time_ntp() # TODO: Temporary while testing lightsleep
 
 

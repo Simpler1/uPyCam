@@ -109,7 +109,7 @@ while loop:
             c.publish(mqtt_config['topic'], buf)
 
         # log("Picture", filename, "taken")  # at:", nowStringExtended())
-        log("Photo", count)
+        log("P", count)
 
         # sleep
         last_time = this_time
