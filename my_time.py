@@ -285,7 +285,7 @@ def deep_sleep_end():
         (_time[0:6] + (_time[6] + seconds + config.app_config["deepSleepBootTime_s"] + config.app_config["deepSleepOvernightCorrection_s"],) + (0,)))
     _is = time.time()
     log("Manually set to    " + nowStringExtended())
-    log(" Difference of", _was - _is, "seconds")
+    log(" Adjustment of", _is - _was, "seconds")
     # set_time_ntp() # TODO: Temporary while testing lightsleep
 
 

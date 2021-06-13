@@ -357,8 +357,11 @@ class BLE_SERVER:
             log("  Get date_time:", struct.unpack("<hbbbbbbbb", now))
             self._ble.gatts_write(self._current_time_handle, now)
         else:
+            _was = time.time()
             log("  Set date_time:", struct.unpack("<hbbbbb", date_time))
             set_time_ble(date_time)
+            _is = time.time()
+            log(" Difference of", _was - _is, "seconds")
             self._ble.gatts_write(self._current_time_handle,
                                   date_time + b'\x00\x00\x03')
         # log("Time is ", nowStringExtended())
