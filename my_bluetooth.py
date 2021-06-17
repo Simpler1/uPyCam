@@ -72,9 +72,21 @@ _FILE_LOG_CHAR = (
     bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
     _FILE_LOG_DESC,
 )
+_FILE_LOG_SIZE_DESC = (
+    (
+        # org.bluetooth.descriptor.gatt.characteristic_user_description
+        bluetooth.UUID(0x2901),
+        _FLAG_DESC_READ | _FLAG_DESC_WRITE,
+    ),
+)
+_FILE_LOG_SIZE_CHAR = (
+    bluetooth.UUID("7a890104-e96d-4842-8b3d-69ce27889cd6"),
+    bluetooth.FLAG_NOTIFY | bluetooth.FLAG_WRITE,
+    _FILE_LOG_SIZE_DESC,
+)
 _FILES_SERVICE = (
     _FILES_UUID,
-    (_FILE_COUNT_CHAR, _FILE_LOG_CHAR,),
+    (_FILE_COUNT_CHAR, _FILE_LOG_CHAR, _FILE_LOG_SIZE_CHAR,),
 )
 
 
@@ -137,7 +149,8 @@ class BLE_SERVER:
             (self._rx_handle,),
             (self._current_time_handle,),
             (self._file_count_handle, self._file_count_desc_handle,
-             self._file_log_handle, self._file_log_desc_handle,),
+             self._file_log_handle, self._file_log_desc_handle,
+             self._file_log_size_handle, self._file_log_size_desc_handle,),
             (self._wifi_handle, self._wifi_desc_handle,),
             (self._sleep_start_handle, self._sleep_start_desc_handle,
              self._sleep_stop_handle, self._sleep_stop_desc_handle,),
@@ -170,6 +183,7 @@ class BLE_SERVER:
 
         self._ble.gatts_write(self._file_count_desc_handle, "Number of Files")
         self._ble.gatts_write(self._file_log_desc_handle, "Log File")
+        self._ble.gatts_write(self._file_log_size_desc_handle, "Log File Size")
         self._ble.gatts_write(self._wifi_desc_handle, "WiFi State")
         self._ble.gatts_write(self._sleep_start_desc_handle, "Sleep Start")
         self._ble.gatts_write(self._sleep_stop_desc_handle, "Sleep Stop")
@@ -230,7 +244,8 @@ class BLE_SERVER:
                         conn_handle, self._file_count_handle)
                 elif value_handle == self._file_log_handle:
                     # print("Write file log")
-                    packed = self.getFileLog()
+                    (packed, packed_file_size) = self.getFileLog()
+                    self._ble.gatts_notify(conn_handle, self._file_log_size_handle, packed_file_size)
                     for chunk in packed:
                         try:
                             # print(chunk)
@@ -320,11 +335,14 @@ class BLE_SERVER:
     def getFileLog(self):
         with open('sd/log.txt', 'r') as f:
             logFile = f.read()
-        log("File log character length is", len(logFile))
+        logFile += '\n+-+-+'
+        logFileSize = len(logFile)
+        packedLogFileSize = struct.pack("<h", logFileSize)
+        log("File log character length is", logFileSize)
         packed = logFile.encode('utf8')
         # Break into a list of 20 byte chunks
         splitLogFile = [packed[i:i+20] for i in range(0, len(packed), 20)]
-        return splitLogFile
+        return [splitLogFile, packedLogFileSize]
 
     def getMacs(self):
         with open('my_macs.json', 'r') as macsJson:

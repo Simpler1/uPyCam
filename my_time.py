@@ -123,7 +123,7 @@ def getGmtSleepStartStopTimes(off_at_utime, on_at_utime, doy):
             on_at_utime = time.gmtime(time.mktime(
                 (2021, 1, doy+1, on_at_hm[0]-tz, on_at_hm[1], 0, 0, 0)))
             log("Sunset:", ss_slt, " Sunrise:", sr_slt, " EST",
-                "\n  Off at:", off_at_utime, "\n  On at: ", on_at_utime, " GMT")
+                "\n  Off at:", off_at_utime, "GMT\n  On at: ", on_at_utime, "GMT")
         off_at_utime_sec = time.mktime(off_at_utime)
         on_at_utime_sec = time.mktime(on_at_utime)
         if off_at_utime_sec < time.mktime(now_ut) and time.mktime(now_ut) < on_at_utime_sec:
