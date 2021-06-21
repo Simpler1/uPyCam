@@ -60,6 +60,8 @@ except Exception as e:
     print("Startup Error:", str(e))
     if (str(e) == '16'):
         print('Missing SD card <<<---')
+    if (str(e) == '[Errno 19] ENODEV'):
+        print('No such device.  Try reformatting the SD card.')
     time.sleep_ms(5000)
     machine.reset()
 
@@ -125,6 +127,10 @@ while loop:
 
     except Exception as e:
         log("Error in main loop:", str(e))
+        if (str(e) == 28):
+          log('No space left on device')
+        elif (str(e) == '[Errno 13] EACCESS'):
+          log('Permission denied')
         error_counter = error_counter + 1
         if error_counter > app_config['max-error']:
             machine.reset()
