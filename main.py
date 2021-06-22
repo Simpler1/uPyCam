@@ -62,6 +62,8 @@ except Exception as e:
         print('Missing SD card <<<---')
     if (str(e) == '[Errno 19] ENODEV'):
         print('No such device.  Try reformatting the SD card.')
+    if (str(e) == '[Errno 5] EIO'):
+        print('I/O error.  Can\'t mount the SD card.')
     time.sleep_ms(5000)
     machine.reset()
 

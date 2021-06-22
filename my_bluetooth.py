@@ -337,7 +337,7 @@ class BLE_SERVER:
             logFile = f.read()
         logFile += '\n+-+-+'
         logFileSize = len(logFile)
-        packedLogFileSize = struct.pack("<h", logFileSize)
+        packedLogFileSize = struct.pack("<l", logFileSize)
         log("File log character length is", logFileSize)
         packed = logFile.encode('utf8')
         # Break into a list of 20 byte chunks
